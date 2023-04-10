@@ -7,7 +7,8 @@ import json
 import glob
 import os
 
-url = "http://127.0.0.1:7860/sdapi/v1/img2img"
+standard_url = "http://127.0.0.1:7860/sdapi/v1/img2img"
+controlnet_url = "http://127.0.0.1:7860/controlnet/img2img"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("prompt")
@@ -21,8 +22,22 @@ parser.add_argument("--inpaint-dir", default="Inpaint")
 parser.add_argument("--input-dir", default="Inputs")
 parser.add_argument("--output-dir", default="Outputs")
 parser.add_argument("denoising_strength")
-
-
+#Controlnet
+parser.add_argument("--input_image", default="")
+parser.add_argument("--mask", default="")
+parser.add_argument("--module", default="")
+parser.add_argument("--model", default="")
+parser.add_argument("--weight", type=float, default=1)
+parser.add_argument("--resize_mode", default="Scale to Fit (Inner Fit)")
+parser.add_argument("--lowvram", type=bool, default=False)
+parser.add_argument("--processor_res", default="")
+parser.add_argument("--threshold_a", default="")
+parser.add_argument("--threshold_b", default="")
+parser.add_argument("--guidance", default="")
+parser.add_argument("--guidance_start", default="")
+parser.add_argument("--guidance_end", default="")
+parser.add_argument("--guessmode", default="")
+parser.add_argument("--controlnet_on", type=bool, default=False)
 args = parser.parse_args()
 
 args.mode = "4"  
@@ -64,7 +79,6 @@ for path in input_image_paths:
 # Encode images from img2img_batch_inpaint_mask_dir
 for path in inpaint_image_paths:
     encoded_inpaint_images.append(encode_image(path))
-print("Input image paths:", input_image_paths)
 
 # 2 is latent noise, 3 is latent nothing, 1 is image
 
@@ -76,7 +90,7 @@ if not os.path.exists(output_session_folder):
     os.makedirs(output_session_folder)
 
 for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_input_images, encoded_inpaint_images)):
-        # Prepare data for API call
+            # Prepare data for API call
     data = {
         "prompt": args.prompt,
         "seed": args.seed,
@@ -115,11 +129,36 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "inpaint_full_res": 0,
         "inpaint_full_res_padding": 32,
         "inpainting_mask_invert": 0,
-
-    }
-
-    print(f"Processing input image {input_image_paths[i]} with inpaint mask {inpaint_image_paths[i]}")
-
+        
+        }
+# Conditionally include controlnet_units
+    if args.controlnet_on:
+        data["controlnet_units"] = [
+            {
+                "input_image": args.input_image,
+                "mask": args.mask,
+                "module": args.module,
+                "model": args.model,
+                "weight": args.weight,
+                "resize_mode": args.resize_mode,
+                "lowvram": args.lowvram,
+                "processor_res": args.processor_res,
+                "threshold_a": args.threshold_a,
+                "threshold_b": args.threshold_b,
+                "guidance": args.guidance,
+                "guidance_start": args.guidance_start,
+                "guidance_end": args.guidance_end,
+                "guessmode": args.guessmode
+            }
+        ]
+    
+# set url based on controlnet_on flag
+    if args.controlnet_on:
+        url = controlnet_url
+    else:
+        url = standard_url 
+    
+    print(json.dumps(data, indent=2))
     response = requests.post(url, json=data, timeout=None)
 
     if response.status_code != 200:
