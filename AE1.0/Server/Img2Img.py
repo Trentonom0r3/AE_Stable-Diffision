@@ -103,9 +103,7 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "mask": encoded_inpaint_image,
         "denoising_strength": args.denoising_strength,
         "mode": args.mode,
-        "inpainting_fill": args.inpainting_fill,
-        
-        # Add missing parameters from the provided data dictionary
+        "inpainting_fill": 1,
         "id_task": "task(na4872ukddopoz4)",
         "prompt_styles": [],
         "init_img": None,
