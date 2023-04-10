@@ -25,8 +25,8 @@ parser.add_argument("denoising_strength")
 
 args = parser.parse_args()
 
-args.mode = "5"  # Set mode to 1
-args.inpainting_fill = "1"  # Set inpainting_fill to 2
+args.mode = "4"  
+args.inpainting_fill = "1" 
 
 # Get the most recent input folder
 input_folders = glob.glob(os.path.join(os.path.dirname(__file__), '..', 'Inputs', '*'))
@@ -76,13 +76,13 @@ if not os.path.exists(output_session_folder):
     os.makedirs(output_session_folder)
 
 for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_input_images, encoded_inpaint_images)):
-    # Prepare data for API call
+        # Prepare data for API call
     data = {
         "prompt": args.prompt,
         "seed": args.seed,
         "batch_size": args.batch_size,
         "steps": args.steps,
-        "image_cfg_scale": args.cfg_scale,
+        "cfg_scale": args.cfg_scale,
         "restore_faces": args.restore_faces,
         "negative_prompt": args.negative_prompt,
         "init_images": [encoded_init_image],
@@ -90,7 +90,34 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "denoising_strength": args.denoising_strength,
         "mode": args.mode,
         "inpainting_fill": args.inpainting_fill,
+        
+        # Add missing parameters from the provided data dictionary
+        "id_task": "task(na4872ukddopoz4)",
+        "prompt_styles": [],
+        "init_img": None,
+        "sketch": None,
+        "init_img_with_mask": None,
+        "inpaint_color_sketch": None,
+        "inpaint_color_sketch_orig": None,
+        "mask_blur": 4,
+        "mask_alpha": 0,
+        "tiling": False,
+        "n_iter": 1,
+        "image_cfg_scale": 1.5,
+        "subseed": -1.0,
+        "subseed_strength": 0,
+        "seed_resize_from_h": 0,
+        "seed_resize_from_w": 0,
+        "seed_enable_extras": False,
+        "height": 512,
+        "width": 512,
+        "resize_mode": 0,
+        "inpaint_full_res": 0,
+        "inpaint_full_res_padding": 32,
+        "inpainting_mask_invert": 0,
+
     }
+
     print(f"Processing input image {input_image_paths[i]} with inpaint mask {inpaint_image_paths[i]}")
 
     response = requests.post(url, json=data, timeout=None)
