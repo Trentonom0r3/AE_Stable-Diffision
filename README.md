@@ -11,6 +11,8 @@ Make sure you are running your webuser-ui.bat file and the local server is up.
 
 Also, make sure you have --api enabled.
 
+NOTE! Please install the output and render modules into your AE copy before running the script. These will allow the 'Get Mask' Function to work properly.
+
 Functionality-
 This creates a scriptUI panel for Adobe After Effects that provides basic parameters for Auto1111 stable diffusion image generation.
 Currently, the 'method' and 'process' dropdowns are unusable, but do not affect functionality. 
