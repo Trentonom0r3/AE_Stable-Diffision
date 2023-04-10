@@ -11,25 +11,31 @@ var img2imgScriptFile = new File(scriptsFolder.parent.fullName + "//Server//Img2
 var initialSolidLayerPosition;
 var initialVideoLayerPosition;
 
-var panelWidth = 300;
+var panelWidth = 50;
 var panelHeight = 300;
-
+var inputFieldWidth = panelWidth - 10;
 var labelColor = [255 / 255, 255 / 255, 255 / 255];
 
-var myPanel = new Window("palette", "Stable Diffusion", undefined, {resizeable: true});
+
+var myPanel = new Window("palette", "Title", undefined, {resizeable:false});
 myPanel.preferredSize = [panelWidth, panelHeight];
 
-var mainGroup = myPanel.add("group");
-mainGroup.orientation = "row";
+// Create a tabbed panel
+var tabbedPanel = myPanel.add("tabbedpanel"); // Move tabbedPanel to be a child of myPanel
+tabbedPanel.orientation = "row";
 
-var mainPanelTab = mainGroup.add("group");
+
+// Add first tab
+var mainPanelTab = tabbedPanel.add("tab", undefined, "Main");
 mainPanelTab.orientation = "column";
 mainPanelTab.alignChildren = ["fill", "top"];
+mainPanelTab.preferredSize = [panelWidth, panelHeight];
+
 
 var promptLabel = mainPanelTab.add("statictext", undefined, "Prompt:");
 promptLabel.graphics.foregroundColor = promptLabel.graphics.newPen(promptLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 var promptInput = mainPanelTab.add("edittext", undefined, "", {multiline: true, scrolling: true, wantReturn: true});
-promptInput.size = [panelWidth - 30, (panelHeight - 20) * 0.2];
+promptInput.size = [inputFieldWidth, 25];
 promptInput.onChange = function () {
     console.log("promptInput value:", promptInput.text);
 };
@@ -37,45 +43,41 @@ promptInput.onChange = function () {
 var negPromptLabel = mainPanelTab.add("statictext", undefined, "Negative Prompt:");
 negPromptLabel.graphics.foregroundColor = negPromptLabel.graphics.newPen(negPromptLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 var negPromptInput = mainPanelTab.add("edittext", undefined, "", {multiline: true, scrolling: true, wantReturn: true});
-negPromptInput.size = [panelWidth - 30, (panelHeight - 20) * 0.2];
+negPromptInput.size = [inputFieldWidth, 25];
 
-var samplerMethodLabel = mainPanelTab.add("statictext", undefined, "Sampler Method:");
-samplerMethodLabel.graphics.foregroundColor = samplerMethodLabel.graphics.newPen(samplerMethodLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-mainPanelTab.add("dropdownlist", undefined, ["Method 1", "Method 2", "Method 3"]).size = [panelWidth - 30, (panelHeight - 20) * 0.05];
-
-var restoreFacesCheckbox = mainPanelTab.add("checkbox", undefined, "Restore Faces");
-
-var samplingSizeLabel = mainPanelTab.add("statictext", undefined, "Sample:");
+var samplingSizeGroup = mainPanelTab.add("group");
+var samplingSizeLabel = samplingSizeGroup.add("statictext", undefined, "Sample:");
 samplingSizeLabel.graphics.foregroundColor = samplingSizeLabel.graphics.newPen(samplingSizeLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-var samplingSizeSlider = mainPanelTab.add("slider", undefined, 20, 1, 150);
-samplingSizeSlider.size = [panelWidth - 30, (panelHeight - 20) * 0.05];
-var samplingSize = mainPanelTab.add("statictext", undefined, "20");
-
+samplingSizeLabel.size = [100,20]
+var samplingSizeSlider = samplingSizeGroup.add("slider", undefined, 20, 1, 150);
+samplingSizeSlider.size = [300, (panelHeight - 20) * 0.05];
+var samplingSize = samplingSizeGroup.add("statictext", undefined, "20");
 
 samplingSizeSlider.onChange = function () {
     samplingSize.text = Math.round(samplingSizeSlider.value);
 };
 
-
-var batchSizeLabel = mainPanelTab.add("statictext", undefined, "Batch Size:");
+var batchSizeGroup = mainPanelTab.add("group");
+var batchSizeLabel = batchSizeGroup.add("statictext", undefined, "Batch Size:");
 batchSizeLabel.graphics.foregroundColor = batchSizeLabel.graphics.newPen(batchSizeLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-var batchSizeSlider = mainPanelTab.add("slider", undefined, 1, 1, 100);
-batchSizeSlider.size = [panelWidth - 30, (panelHeight - 20) * 0.05];
-var batchSize = mainPanelTab.add("statictext", undefined, "1");
+batchSizeLabel.size = [100,20]
+var batchSizeSlider = batchSizeGroup.add("slider", undefined, 1, 1, 100);
+batchSizeSlider.size = [300, (panelHeight - 20) * 0.05];
+var batchSize = batchSizeGroup.add("statictext", undefined, "1");
 batchSize.size = [50, 20];
 batchSize.readonly = true;
-
 
 batchSizeSlider.onChange = function () {
     batchSize.text = Math.round(batchSizeSlider.value);
 };
 
-
-var batchCountLabel = mainPanelTab.add("statictext", undefined, "Batch Count:");
+var batchCountGroup = mainPanelTab.add("group");
+var batchCountLabel = batchCountGroup.add("statictext", undefined, "Batch Count:");
 batchCountLabel.graphics.foregroundColor = batchCountLabel.graphics.newPen(batchCountLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-var batchCountSlider = mainPanelTab.add("slider", undefined, 1, 1, 10);
-batchCountSlider.size = [panelWidth - 30, (panelHeight - 20) * 0.05];
-var batchCount = mainPanelTab.add("statictext", undefined, "1");
+batchCountLabel.size = [100,20]
+var batchCountSlider = batchCountGroup.add("slider", undefined, 1, 1, 10);
+batchCountSlider.size = [300, (panelHeight - 20) * 0.05];
+var batchCount = batchCountGroup.add("statictext", undefined, "1");
 batchCount.size = [50, 20];
 batchCount.readonly = true;
 
@@ -83,56 +85,53 @@ batchCountSlider.onChange = function () {
     batchCount.text = Math.round(batchCountSlider.value);
 };
 
-var cfgScaleLabel = mainPanelTab.add("statictext", undefined, "CFG Scale:");
+var cfgScaleGroup = mainPanelTab.add("group");
+var cfgScaleLabel = cfgScaleGroup.add("statictext", undefined, "CFG Scale:");
 cfgScaleLabel.graphics.foregroundColor = cfgScaleLabel.graphics.newPen(cfgScaleLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-var cfgScaleSlider = mainPanelTab.add("slider", undefined, 10, 1, 30);
-cfgScaleSlider.size = [panelWidth - 30, 20];
-var cfgScale = mainPanelTab.add("statictext", undefined, "10");
+cfgScaleLabel.size = [100,20]
+var cfgScaleSlider = cfgScaleGroup.add("slider", undefined, 10.0,0.0,30.0);
+cfgScaleSlider.size = [300, (panelHeight - 20) * 0.05];
+var cfgScale = cfgScaleGroup.add("statictext", undefined, "10.0");
 cfgScale.size = [50, 20];
 cfgScale.readonly = true;
 cfgScaleSlider.onChange = function () {
-    cfgScale.text = Math.round(cfgScaleSlider.value);
+    cfgScale.text = (Math.round(cfgScaleSlider.value * 2) / 2).toFixed(1);
 };
-
-var denoisingStrengthLabel = mainPanelTab.add("statictext", undefined, "Denoising Strength:");
+ 
+var denoisingStrengthGroup = mainPanelTab.add("group");
+var denoisingStrengthLabel = denoisingStrengthGroup.add("statictext", undefined, "Denoising Strength:");
+denoisingStrengthLabel.size = [100,20]
 denoisingStrengthLabel.graphics.foregroundColor = denoisingStrengthLabel.graphics.newPen(denoisingStrengthLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 
-var denoisingStrengthSlider = mainPanelTab.add("slider", undefined, 0.5, 0.0, 1);
-denoisingStrengthSlider.size = [panelWidth - 30, 20];
-var denoisingStrength = mainPanelTab.add("statictext", undefined, "0.0");
-denoisingStrength.size = [50, 20];
-denoisingStrength.readonly = true;
+var denoisingStrengthSlider = denoisingStrengthGroup.add("slider", undefined, 0.50, 0.00, 1.00);
+denoisingStrengthSlider.size = [300, (panelHeight - 20) * 0.05];
+var denoisingStrength = denoisingStrengthGroup.add("statictext", undefined, "0.50");
+
+
 denoisingStrengthSlider.onChange = function () {
-    denoisingStrength.text = (denoisingStrengthSlider.value * 1).toFixed(1);
+denoisingStrength.text = (denoisingStrengthSlider.value * 1).toFixed(2);
 };
 
 var checkBoxGroup = mainPanelTab.add("group");
 checkBoxGroup.orientation = "row";
 
-var processModeLabel = checkBoxGroup.add("statictext", undefined, "Process Mode:");
-processModeLabel.graphics.foregroundColor = processModeLabel.graphics.newPen(processModeLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-var processModeDropDown = checkBoxGroup.add("dropdownlist", undefined, ["Single Process", "Batch Process"]);
-processModeDropDown.selection = 0;
+var samplerMethodLabel = checkBoxGroup.add("statictext", undefined, "Sampler Method:");
+samplerMethodLabel.graphics.foregroundColor = samplerMethodLabel.graphics.newPen(samplerMethodLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
+checkBoxGroup.add("dropdownlist", undefined, ["Method 1", "Method 2", "Method 3"]).size = [panelWidth - 30, (panelHeight - 20) * 0.05];
+
+var restoreFacesCheckbox = checkBoxGroup.add("checkbox", undefined, "Restore Faces");
 
 var seedLabel = checkBoxGroup.add("statictext", undefined, "Seed:");
 seedLabel.graphics.foregroundColor = seedLabel.graphics.newPen(seedLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 
 var seedInput = checkBoxGroup.add("edittext", undefined, "-1");
-seedInput.characters = 15;
+seedInput.characters = 25;
+seedInput.size = [90,25];
 
 var resetSeedButton = checkBoxGroup.add("button", undefined, "Reset");
 resetSeedButton.onClick = function () {
     seedInput.text = "-1";
 };
-
-
-
-function updatePanelSize() {
-    var extraHeight = expandedPanel.visible ? expandedPanel.size[1] : 0;
-    var contentHeight = mainPanelTab.children[0].size[1] + mainPanelTab.children[1].size[1] + mainPanelTab.children[2].size[1] + mainPanelTab.children[3].size[1] + mainPanelTab.children[4].size[1] + mainPanelTab.children[5].size[1] + buttonGroup.size[1] + 25 + extraHeight;
-    myPanel.preferredSize = [contentWidth, contentHeight];
-    myPanel.layout.resize();
-}
 
 
 function saveJSONToFile(jsonData, filePath) {
@@ -148,7 +147,7 @@ buttonGroup.orientation = "row";
 buttonGroup.alignChildren = ["fill", "top"]; // Set the alignment of the children to fill the available space
 
 var getMaskButton = buttonGroup.add("button", undefined, "Get Mask");
-getMaskButton.size = [(panelWidth - 30) / 2, 25];
+getMaskButton.size = [(panelWidth - 50) / 2, 25];
 
 getMaskButton.onClick = function () {
     if (getMaskButton.text == "Get Mask") {
@@ -298,7 +297,7 @@ function getMostRecentFolder(path) {
 
 
 var sendToTxt2ImgButton = customButtonGroup.add("button", undefined, "Send to txt2img");
-sendToTxt2ImgButton.size = [(panelWidth - 30) / 2, 25];
+sendToTxt2ImgButton.size = [(panelWidth - 50) / 2, 25];
 
 sendToTxt2ImgButton.onClick = function () {
 	var promptV = promptInput.text;
@@ -339,7 +338,7 @@ sendToTxt2ImgButton.onClick = function () {
 
 
 var sendToImg2ImgButton = customButtonGroup.add("button", undefined, "Send to img2img");
-sendToImg2ImgButton.size = [(panelWidth - 30) / 2, 25];
+sendToImg2ImgButton.size = [(panelWidth - 50) / 2, 25];
 
 sendToImg2ImgButton.onClick = function () {
     var promptV = promptInput.text;
@@ -450,25 +449,107 @@ clearCacheButton.onClick = function () {
 
 };
 
+// Add second tab
+var secondPanelTab = tabbedPanel.add("tab", undefined, "Controlnet");
+secondPanelTab.orientation = "column";
+secondPanelTab.alignChildren = ["fill", "top"];
+secondPanelTab.preferredSize = [panelWidth, panelHeight];
 
+// Enable Controlnet and Low VRAM checkboxes
+var checkboxesGroup = secondPanelTab.add("group");
+checkboxesGroup.orientation = "row";
+var enableControlnetCheckbox = checkboxesGroup.add("checkbox", undefined, "Enable Controlnet");
+var lowVramCheckbox = checkboxesGroup.add("checkbox", undefined, "Low VRAM");
 
+// Module and Model dropdowns
+var moduleModelGroup = secondPanelTab.add("group");
+moduleModelGroup.orientation = "row";
+moduleModelGroup.alignChildren = ["left", "center"];
+var moduleLabel = moduleModelGroup.add("statictext", undefined, "Module:");
+var moduleDropdown = moduleModelGroup.add("dropdownlist", undefined, ["Module 1", "Module 2", "Module 3"]);
+var modelLabel = moduleModelGroup.add("statictext", undefined, "Model:");
+var modelDropdown = moduleModelGroup.add("dropdownlist", undefined, ["Model 1", "Model 2", "Model 3"]);
 
-var expandedPanel = mainPanelTab.add("panel", undefined, "");
-expandedPanel.size = [panelWidth - 30, 100];
-expandedPanel.visible = false;
+// Weight, Guidance Start, and Guidance End sliders
+var weightGuidanceGroup = secondPanelTab.add("group");
+weightGuidanceGroup.orientation = "column";
+var weightLabel = weightGuidanceGroup.add("statictext", undefined, "Weight:");
+weightLabel.alignment = ["left", "center"];
+var weightSlider = weightGuidanceGroup.add("slider", undefined, 1, 0, 2);
+weightSlider.alignment = ["fill", "center"];
+var guidanceStartLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance Start:");
+guidanceStartLabel.alignment = ["left", "center"];
+var guidanceStartSlider = weightGuidanceGroup.add("slider", undefined, 0, 0, 1);
+guidanceStartSlider.alignment = ["fill", "center"];
+var guidanceEndLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance End:");
+guidanceEndLabel.alignment = ["left", "center"];
+var guidanceEndSlider = weightGuidanceGroup.add("slider", undefined, 1, 0, 1);
+guidanceEndSlider.alignment = ["fill", "center"];
 
-myPanel.layout.layout(true); // Force the initial layout
+// Resize mode checkboxes
+var resizeModeGroup = secondPanelTab.add("group");
+resizeModeGroup.orientation = "column";
+resizeModeGroup.alignChildren = ["left", "top"];
+var resizeModeLabel = resizeModeGroup.add("statictext", undefined, "Resize Mode:");
+var justResizeCheckbox = resizeModeGroup.add("checkbox", undefined, "Just Resize");
+var innerFitCheckbox = resizeModeGroup.add("checkbox", undefined, "Scale to Fit (Inner Fit)");
+var outerFitCheckbox = resizeModeGroup.add("checkbox", undefined, "Envelope (Outer Fit)");
 
-myPanel.onResizing = myPanel.onResize = function () {
-this.layout.resize();
+// Processor Res slider
+var processorResGroup = secondPanelTab.add("group");
+processorResGroup.orientation = "column";
+var processorResLabel = processorResGroup.add("statictext", undefined, "Processor Res:");
+processorResLabel.alignment = ["left", "center"];
+var processorResSlider = processorResGroup.add("slider", undefined, 64, 64, 2048);
+processorResSlider.alignment = ["fill", "center"];
+
+// Round sliders' values to integers
+weightSlider.onChanging = function () {
+  weightSlider.value = Math.round(weightSlider.value);
+};
+guidanceStartSlider.onChanging = function () {
+  guidanceStartSlider.value = Math.round(guidanceStartSlider.value);
 };
 
-// Force the initial layout
-myPanel.layout.layout(true);
+guidanceEndSlider.onChanging = function () {
+  guidanceEndSlider.value = Math.round(guidanceStartSlider.value);
+};
+// Checkbox event listeners
+enableControlnetCheckbox.onClick = function () {
+};
 
-// Resize the panel if its content changes
-myPanel.onResizing = myPanel.onResize = function () {
-this.layout.resize();
+// Round slider values to nearest integer
+weightSlider.onChange = function () {
+weightSlider.value = Math.round(weightSlider.value);
+};
+guidanceStartSlider.onChange = function () {
+guidanceStartSlider.value = Math.round(guidanceStartSlider.value);
+};
+guidanceEndSlider.onChange = function () {
+guidanceEndSlider.value = Math.round(guidanceEndSlider.value);
+};
+processorResSlider.onChange = function () {
+processorResSlider.value = Math.round(processorResSlider.value);
+};
+
+// Resize mode event listeners
+justResizeCheckbox.onClick = function () {
+if (justResizeCheckbox.value) {
+innerFitCheckbox.value = false;
+outerFitCheckbox.value = false;
+}
+};
+innerFitCheckbox.onClick = function () {
+if (innerFitCheckbox.value) {
+justResizeCheckbox.value = false;
+outerFitCheckbox.value = false;
+}
+};
+outerFitCheckbox.onClick = function () {
+if (outerFitCheckbox.value) {
+justResizeCheckbox.value = false;
+innerFitCheckbox.value = false;
+}
 };
 
 // Show the panel
