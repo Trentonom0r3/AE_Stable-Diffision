@@ -10,38 +10,45 @@ import os
 standard_url = "http://127.0.0.1:7860/sdapi/v1/img2img"
 controlnet_url = "http://127.0.0.1:7860/controlnet/img2img"
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 parser = argparse.ArgumentParser()
+parser.add_argument("process_type", type=str2bool)
 parser.add_argument("prompt")
 parser.add_argument("seed", type=int)
 parser.add_argument("batch_size", type=int)
 parser.add_argument("steps", type=int)
 parser.add_argument("cfg_scale", type=int)
-parser.add_argument("restore_faces", type=bool)
+parser.add_argument("restore_faces", type=str2bool)
 parser.add_argument("negative_prompt")
 parser.add_argument("--inpaint-dir", default="Inpaint")
 parser.add_argument("--input-dir", default="Inputs")
 parser.add_argument("--output-dir", default="Outputs")
 parser.add_argument("denoising_strength")
+parser.add_argument("width")
+parser.add_argument("height")
 #Controlnet
-parser.add_argument("--input_image", default="")
-parser.add_argument("--mask", default="")
-parser.add_argument("--module", default="")
-parser.add_argument("--model", default="")
+parser.add_argument("--controlnet_on", type=str2bool, nargs='?', const=True, default=False)
 parser.add_argument("--weight", type=float, default=1)
-parser.add_argument("--resize_mode", default="Scale to Fit (Inner Fit)")
-parser.add_argument("--lowvram", type=bool, default=False)
-parser.add_argument("--processor_res", default="")
-parser.add_argument("--threshold_a", default="")
-parser.add_argument("--threshold_b", default="")
-parser.add_argument("--guidance", default="")
-parser.add_argument("--guidance_start", default="")
-parser.add_argument("--guidance_end", default="")
-parser.add_argument("--guessmode", default="")
-parser.add_argument("--controlnet_on", type=bool, default=False)
+parser.add_argument("--lowvram", type=str2bool, default=False)
+parser.add_argument("--processor_res", default="1024x1024") # You can set the default value based on your requirements
+
+parser.add_argument("--guidance")
+
 args = parser.parse_args()
 
 args.mode = "4"  
-args.inpainting_fill = "1" 
+args.resize_mode = "0"
+args.model = "depth"
+args.module = "control_sd15_depth [fef5e48e]"
 
 # Get the most recent input folder
 input_folders = glob.glob(os.path.join(os.path.dirname(__file__), '..', 'Inputs', '*'))
@@ -73,14 +80,18 @@ encoded_input_images = []
 encoded_inpaint_images = []
 
 # Encode images from img2img_batch_input_dir
-for path in input_image_paths:
-    encoded_input_images.append(encode_image(path))
+if args.process_type:
+    for path in input_image_paths:
+        encoded_input_images.append(encode_image(path))
+else:
+    encoded_input_images.append(encode_image(input_image_paths[0]))
 
 # Encode images from img2img_batch_inpaint_mask_dir
-for path in inpaint_image_paths:
-    encoded_inpaint_images.append(encode_image(path))
-
-# 2 is latent noise, 3 is latent nothing, 1 is image
+if args.process_type:
+    for path in inpaint_image_paths:
+        encoded_inpaint_images.append(encode_image(path))
+else:
+    encoded_inpaint_images.append(encode_image(inpaint_image_paths[0]))
 
 args.img2img_batch_output_dir = os.path.join(os.path.dirname(__file__), '..', 'Outputs')
 
@@ -121,43 +132,33 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "seed_resize_from_h": 0,
         "seed_resize_from_w": 0,
         "seed_enable_extras": False,
-        "height": 512,
-        "width": 512,
+        "width":args.width,
+        "height": args.height,
         "resize_mode": 0,
         "inpaint_full_res": 0,
         "inpaint_full_res_padding": 32,
         "inpainting_mask_invert": 0,
         
         }
-# Conditionally include controlnet_units
     if args.controlnet_on:
         data["controlnet_units"] = [
             {
-                "input_image": args.input_image,
-                "mask": args.mask,
+                "mode" : args.model,
                 "module": args.module,
-                "model": args.model,
-                "weight": args.weight,
                 "resize_mode": args.resize_mode,
-                "lowvram": args.lowvram,
-                "processor_res": args.processor_res,
-                "threshold_a": args.threshold_a,
-                "threshold_b": args.threshold_b,
-                "guidance": args.guidance,
-                "guidance_start": args.guidance_start,
-                "guidance_end": args.guidance_end,
-                "guessmode": args.guessmode
+       
             }
         ]
-    
-# set url based on controlnet_on flag
+
+    # Set url based on controlnet_on flag
     if args.controlnet_on:
         url = controlnet_url
     else:
-        url = standard_url 
-    
+        url = standard_url
+
     print(json.dumps(data, indent=2))
     response = requests.post(url, json=data, timeout=None)
+
 
     if response.status_code != 200:
         print(f"Error processing image {i}: {response.status_code}, {response.text}")
@@ -167,14 +168,14 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
     result_images = [base64.b64decode(img) for img in result["images"]]
 
     for k, result_image in enumerate(result_images):
-        output_file_path = os.path.join(output_session_folder, f"output_{i}_{k}.png")
+        output_file_path = os.path.join(output_session_folder, f"output_{i}.png")
         with open(output_file_path, "wb") as output_file:
             output_file.write(result_image)
         print(f"Output image {k} saved at: {output_file_path}")
 
     # If batch process, save the image to the input directory for the next iteration
     if args.batch_size > 1 and k < args.batch_size - 1:
-        input_file_path = os.path.join(args.img2img_batch_input_dir, f"input_{i * args.batch_size + k + 1}.png")
+        input_file_path = os.path.join(args.img2img_batch_input_dir, f"input_{i * args.batch_size + 1}.png")
         with open(input_file_path, "wb") as input_file:
             input_file.write(result_image)
         print(f"Input image {i * args.batch_size + k + 1} saved at: {input_file_path}")
