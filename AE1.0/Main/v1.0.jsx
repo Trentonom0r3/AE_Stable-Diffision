@@ -10,7 +10,8 @@ var img2imgScriptFile = new File(scriptsFolder.parent.fullName + "//Server//Img2
 
 var initialSolidLayerPosition;
 var initialVideoLayerPosition;
-
+var mWidth = 512;
+var mHeight = 512;
 var panelWidth = 50;
 var panelHeight = 300;
 var inputFieldWidth = panelWidth - 10;
@@ -115,9 +116,8 @@ denoisingStrength.text = (denoisingStrengthSlider.value * 1).toFixed(2);
 var checkBoxGroup = mainPanelTab.add("group");
 checkBoxGroup.orientation = "row";
 
-var samplerMethodLabel = checkBoxGroup.add("statictext", undefined, "Sampler Method:");
-samplerMethodLabel.graphics.foregroundColor = samplerMethodLabel.graphics.newPen(samplerMethodLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-checkBoxGroup.add("dropdownlist", undefined, ["Method 1", "Method 2", "Method 3"]).size = [panelWidth - 30, (panelHeight - 20) * 0.05];
+var enableBatchCheckbox = checkBoxGroup.add("checkbox", undefined, "Enable Batch?");
+
 
 var restoreFacesCheckbox = checkBoxGroup.add("checkbox", undefined, "Restore Faces");
 
@@ -145,17 +145,80 @@ function saveJSONToFile(jsonData, filePath) {
 var buttonGroup = mainPanelTab.add("group");
 buttonGroup.orientation = "row";
 buttonGroup.alignChildren = ["fill", "top"]; // Set the alignment of the children to fill the available space
+buttonGroup.alignment = "left";
 
+function roundToNearestStep(value, step) {
+    return Math.round(value / step) * step;
+}
+
+// Add width slider and label
+var widthGroup = buttonGroup.add("group");
+widthGroup.orientation = "row";
+var widthLabel = widthGroup.add("statictext");
+widthLabel.text = "Width:";
+widthLabel.size = [40, 20];
+var widthInput = widthGroup.add("edittext");
+widthInput.text = "512";
+widthInput.size = [35, 20];
+var widthSlider = widthGroup.add("slider", undefined, 512, 0, 1280);
+widthSlider.size = [81, 20];
+
+widthInput.onChange = function() {
+    var inputValue = parseInt(this.text);
+    if (!isNaN(inputValue) && inputValue >= 0 && inputValue <= 1280) {
+        inputValue = roundToNearestStep(inputValue, 8);
+        widthSlider.value = inputValue;
+        this.text = inputValue;
+    } else {
+        alert("Please enter a value between 0 and 1280.");
+    }
+};
+
+widthSlider.onChanging = function() {
+    widthInput.text = Math.round(this.value);
+};
+
+// Add height slider and label
+var heightGroup = buttonGroup.add("group");
+heightGroup.orientation = "row";
+var heightLabel = heightGroup.add("statictext");
+heightLabel.text = "Heighth:";
+heightLabel.size = [40, 20];
+var heightInput = heightGroup.add("edittext");
+heightInput.text = "512";
+heightInput.size = [35, 20];
+var heightSlider = heightGroup.add("slider", undefined, 512, 0, 1024);
+heightSlider.size = [82, 20];
+
+heightInput.onChange = function() {
+    var inputValue = parseInt(this.text);
+    if (!isNaN(inputValue) && inputValue >= 0 && inputValue <= 1024) {
+        inputValue = roundToNearestStep(inputValue, 8);
+        heightSlider.value = inputValue;
+        this.text = inputValue;
+    } else {
+        alert("Please enter a value between 0 and 1024.");
+    }
+};
+
+heightSlider.onChanging = function() {
+    heightInput.text = Math.round(this.value);
+};
+
+
+// Add Get Mask button
 var getMaskButton = buttonGroup.add("button", undefined, "Get Mask");
-getMaskButton.size = [(panelWidth - 50) / 2, 25];
 
-getMaskButton.onClick = function () {
+
+getMaskButton.onClick = function() {
+    mWidth = parseInt(widthInput.text);
+    mHeight = parseInt(heightInput.text);
     if (getMaskButton.text == "Get Mask") {
         app.beginUndoGroup('Export 512x512 Mask');
         // Get the existing comp
         var existingComp = app.project.activeItem;
-        // Create 512x512 solid layer
-        var solidLayer = existingComp.layers.addSolid([1, 1, 1], 'Mask', 512, 512, 1);
+        
+        var solidLayer = existingComp.layers.addSolid([1, 1, 1], 'Mask', mWidth, mHeight, 1);
         solidLayer.position.setValue([960, 540]); // Adjust position as needed
         solidLayer.property("Opacity").expression = "100";
          // Set track matte for the clip layer
@@ -186,11 +249,11 @@ getMaskButton.onClick = function () {
         
         // Change the size of the existing composition
         app.beginUndoGroup('Change Comp Size');
-        existingComp.width = 512;
-        existingComp.height = 512;
+        existingComp.width = mWidth;
+        existingComp.height = mHeight;
         existingComp.pixelAspect = 1;
         existingComp.resolutionFactor = [1,1];
-        solidLayer.property("Position").setValue([256, 256, 0]);
+        solidLayer.property("Position").setValue([mWidth/2, mHeight/2, 0]);
         app.endUndoGroup();
         
         getMaskButton.text = "Get Mask";
@@ -319,6 +382,8 @@ sendToTxt2ImgButton.onClick = function () {
 	  cfg_scale: roundedCfgScaleV,
 	  restore_faces: restoreFaces,
 	  negative_prompt: negPromptV,
+	  width: mWidth,
+	  height: mHeight,
 	 };
 	 
     // Call the Txt2IMG.py script with the data as a system call
@@ -332,7 +397,8 @@ sendToTxt2ImgButton.onClick = function () {
     command += ' "' + data.cfg_scale + '"';
     command += ' "' + (typeof data.restore_faces !== 'undefined' ? data.restore_faces : '') + '"';
     command += ' "' + data.negative_prompt + '"';
-
+	command += ' "' + data.width + '"';
+	command += ' "' + data.height + '"';
     system.callSystem(command);
 };
 
@@ -341,21 +407,22 @@ var sendToImg2ImgButton = customButtonGroup.add("button", undefined, "Send to im
 sendToImg2ImgButton.size = [(panelWidth - 50) / 2, 25];
 
 sendToImg2ImgButton.onClick = function () {
+	var enableBatchV = enableBatchCheckbox.value ? true : false;
     var promptV = promptInput.text;
     var negPromptV = negPromptInput.text;
     var samplingSizeV = Math.round(samplingSizeSlider.value);
     var batchSizeV = Math.round(batchSizeSlider.value);
     var batchCountV = batchCountSlider.value;
     var cfgScaleV = cfgScaleSlider.value;
-	var roundedCfgScaleV = Math.round(cfgScaleV * 2) / 2; // Round to the nearest 0.5
-	var denoisingStrengthV = denoisingStrengthSlider.value;
-	var roundedDenoisingStrengthV = Math.round(denoisingStrengthV * 100) / 100; // Round to the nearest 0.01
-
+    var roundedCfgScaleV = Math.round(cfgScaleV * 2) / 2; // Round to the nearest 0.5
+    var denoisingStrengthV = denoisingStrengthSlider.value;
+    var roundedDenoisingStrengthV = Math.round(denoisingStrengthV * 100) / 100; // Round to the nearest 0.01
     var seedV = seedInput.text;
     var restoreFaces = restoreFacesCheckbox.value ? true : false;
-
+	
     // Initialize data object and assign values
     var data = {
+		process_type: enableBatchV,
         prompt: promptV,
         negative_prompt: negPromptV,
         seed: seedV,
@@ -363,25 +430,46 @@ sendToImg2ImgButton.onClick = function () {
         steps: samplingSizeV,
         cfg_scale: roundedCfgScaleV,
         restore_faces: restoreFaces,
-        denoising_strength: roundedDenoisingStrengthV
+        denoising_strength: roundedDenoisingStrengthV,
+		width: mWidth,
+	    height: mHeight	
     };
 
+    if (enableControlnetCheckbox.value) {
+        var lowVram = lowVramCheckbox.value ? true : false;
+        var weightV = weightSlider.value;
+        var processorResV = processorResSlider.value;
+     
+        data.weight = weightV;
+        data.low_vram = lowVram;
+        data.processor_res = processorResV;
+    }
+
     // Call the Img2IMG.py script with the data as a system call
-		var command = 'python "' + img2imgScriptFile.fsName + '"';
-		command += ' "' + data.prompt + '"';
-		command += ' "' + data.seed + '"';
-		command += ' "' + data.batch_size + '"';
-		command += ' "' + data.steps + '"';
-		command += ' "' + data.cfg_scale + '"';
-		command += ' "' + data.restore_faces + '"';
-		command += ' "' + data.negative_prompt + '"';
-		command += ' "' + data.denoising_strength + '"';
+    var command = 'python "' + img2imgScriptFile.fsName + '"';
+    command += ' "' + data.process_type + '"';
+	command += ' "' + data.prompt + '"';
+    command += ' "' + data.seed + '"';
+    command += ' "' + data.batch_size + '"';
+    command += ' "' + data.steps + '"';
+    command += ' "' + data.cfg_scale + '"';
+    command += ' "' + data.restore_faces + '"';
+    command += ' "' + data.negative_prompt + '"';
+    command += ' "' + data.denoising_strength + '"';
+	command += ' "' + data.width + '"';
+	command += ' "' + data.height + '"';
+	
+//add command line argument for controlnet_on = True/False
+    if (enableControlnetCheckbox.value) {
+
+		command += ' --controlnet_on ';
+    }
 
 		alert(command);
 
 		system.callSystem(command);
 };
-
+//Depnding on checkbox clicked, will set resize mode checkbox value
 // Function to import the .png sequence from a selected file
 function importPngSequence(file) {
     if (!file) {
@@ -473,15 +561,15 @@ var modelDropdown = moduleModelGroup.add("dropdownlist", undefined, ["Model 1", 
 // Weight, Guidance Start, and Guidance End sliders
 var weightGuidanceGroup = secondPanelTab.add("group");
 weightGuidanceGroup.orientation = "column";
-var weightLabel = weightGuidanceGroup.add("statictext", undefined, "Weight:");
+var weightLabel = weightGuidanceGroup.add("statictext", undefined, "Weight: 1");
 weightLabel.alignment = ["left", "center"];
 var weightSlider = weightGuidanceGroup.add("slider", undefined, 1, 0, 2);
 weightSlider.alignment = ["fill", "center"];
-var guidanceStartLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance Start:");
+var guidanceStartLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance Start: 0");
 guidanceStartLabel.alignment = ["left", "center"];
 var guidanceStartSlider = weightGuidanceGroup.add("slider", undefined, 0, 0, 1);
 guidanceStartSlider.alignment = ["fill", "center"];
-var guidanceEndLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance End:");
+var guidanceEndLabel = weightGuidanceGroup.add("statictext", undefined, "Guidance End: 1");
 guidanceEndLabel.alignment = ["left", "center"];
 var guidanceEndSlider = weightGuidanceGroup.add("slider", undefined, 1, 0, 1);
 guidanceEndSlider.alignment = ["fill", "center"];
@@ -503,34 +591,28 @@ processorResLabel.alignment = ["left", "center"];
 var processorResSlider = processorResGroup.add("slider", undefined, 64, 64, 2048);
 processorResSlider.alignment = ["fill", "center"];
 
-// Round sliders' values to integers
-weightSlider.onChanging = function () {
+// Round slider values to nearest integer and update the labels
+weightSlider.onChange = function () {
   weightSlider.value = Math.round(weightSlider.value);
+  weightLabel.text = "Weight: " + weightSlider.value;
 };
-guidanceStartSlider.onChanging = function () {
+guidanceStartSlider.onChange = function () {
   guidanceStartSlider.value = Math.round(guidanceStartSlider.value);
+  guidanceStartLabel.text = "Guidance Start: " + guidanceStartSlider.value;
+};
+guidanceEndSlider.onChange = function () {
+  guidanceEndSlider.value = Math.round(guidanceEndSlider.value);
+  guidanceEndLabel.text = "Guidance End: " + guidanceEndSlider.value;
+};
+processorResSlider.onChange = function () {
+  processorResSlider.value = Math.round(processorResSlider.value);
+  processorResLabel.text = "Processor Res: " + processorResSlider.value;
 };
 
-guidanceEndSlider.onChanging = function () {
-  guidanceEndSlider.value = Math.round(guidanceStartSlider.value);
-};
 // Checkbox event listeners
 enableControlnetCheckbox.onClick = function () {
 };
 
-// Round slider values to nearest integer
-weightSlider.onChange = function () {
-weightSlider.value = Math.round(weightSlider.value);
-};
-guidanceStartSlider.onChange = function () {
-guidanceStartSlider.value = Math.round(guidanceStartSlider.value);
-};
-guidanceEndSlider.onChange = function () {
-guidanceEndSlider.value = Math.round(guidanceEndSlider.value);
-};
-processorResSlider.onChange = function () {
-processorResSlider.value = Math.round(processorResSlider.value);
-};
 
 // Resize mode event listeners
 justResizeCheckbox.onClick = function () {
