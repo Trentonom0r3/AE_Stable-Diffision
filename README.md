@@ -33,11 +33,6 @@ Click the 'Confirm?' button. This will link the layers, center the comp, and exp
 Next, mess around with your parameters, and then hit img2img. This will send the input and inpaint images to be generated using your prompts and parameters. 
 I've found it to be difficult with some things, great on others-- just make sure you use a rotoscope on your clip before using the script. 
 
-![Screenshot 2023-04-09 114340](https://user-images.githubusercontent.com/130304830/230786301-a53dd6c4-6f15-4357-aa2a-94c73588e9c7.png)
-
-
-![Screenshot 2023-04-09 114836](https://user-images.githubusercontent.com/130304830/230786336-bec202ac-71e4-4c68-bb5c-9e93e9a52e6b.png)
-
 Once that has finished, you can click 'Impose.' This will have you select the output (it will be in the outputs folder), and it will import it into the same position as the solid layer before centering and cropping.
   NOTE- Impose is being kind of wonky, I need to mess with it some more as it isn't properly adding the layer to the same position, but it does add the layer to the comp for you still.
 'Clear cache and render queue' - This is self explanatory, though it doesn't clear the cache currently. 
@@ -51,4 +46,7 @@ If you notice the script freeze up, or buttons not working, there are a few thin
 
 Sometimes I have to do all 3, sometimes I only have to do one of those. But typically those will fix the issue. 
 Keep in mind as I mentioned earlier, literally all of this code was written by GPT4. I really don't understand all of it, but I will be continuing to learn and develop this, making it more optimized and have extra functionality.
-If you have any questions, feel free to ask and I will do my best to answer them!
+If you have any questions, feel free to ask and I will do my best to answer them!![Screenshot 2023-04-14 105311](https://user-images.githubusercontent.com/130304830/232093618-e4893c09-06cf-485b-8cb1-d144101a38a4.png)
+
+
+
