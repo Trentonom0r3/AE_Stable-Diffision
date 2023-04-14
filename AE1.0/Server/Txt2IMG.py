@@ -4,6 +4,7 @@ import base64
 import os
 import sys
 import json
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("prompt")
@@ -49,8 +50,9 @@ if response.status_code == 200:
     if not os.path.exists(outputs_folder):
         os.makedirs(outputs_folder)
 
-    # Save the image to the Outputs folder
-    output_file_path = os.path.join(outputs_folder, "output.png")
+    # Save the image to the Outputs folder with a unique filename
+    timestamp = int(time.time())
+    output_file_path = os.path.join(outputs_folder, f"output_{timestamp}.png")
     with open(output_file_path, "wb") as output_file:
         output_file.write(result_image)
 
