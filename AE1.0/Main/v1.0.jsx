@@ -12,31 +12,31 @@ var initialSolidLayerPosition;
 var initialVideoLayerPosition;
 var mWidth = 512;
 var mHeight = 512;
-var panelWidth = 50;
-var panelHeight = 300;
+var panelWidth = 350;
+var panelHeight = 467;
 var inputFieldWidth = panelWidth - 10;
 var labelColor = [255 / 255, 255 / 255, 255 / 255];
 
 
-var myPanel = new Window("palette", "Title", undefined, {resizeable:false});
+var myPanel = new Window("palette", "Title", undefined, {resizeable:true});
 myPanel.preferredSize = [panelWidth, panelHeight];
 
 // Create a tabbed panel
 var tabbedPanel = myPanel.add("tabbedpanel"); // Move tabbedPanel to be a child of myPanel
 tabbedPanel.orientation = "row";
-
+tabbedPanel.preferredSize.width = 200; 
 
 // Add first tab
 var mainPanelTab = tabbedPanel.add("tab", undefined, "Main");
 mainPanelTab.orientation = "column";
 mainPanelTab.alignChildren = ["fill", "top"];
-mainPanelTab.preferredSize = [panelWidth, panelHeight];
+mainPanelTab.preferredSize = [200, panelHeight];
 
 
 var promptLabel = mainPanelTab.add("statictext", undefined, "Prompt:");
 promptLabel.graphics.foregroundColor = promptLabel.graphics.newPen(promptLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 var promptInput = mainPanelTab.add("edittext", undefined, "", {multiline: true, scrolling: true, wantReturn: true});
-promptInput.size = [inputFieldWidth, 25];
+promptInput.preferredSize.width = 345.3; 
 promptInput.onChange = function () {
     console.log("promptInput value:", promptInput.text);
 };
@@ -44,14 +44,14 @@ promptInput.onChange = function () {
 var negPromptLabel = mainPanelTab.add("statictext", undefined, "Negative Prompt:");
 negPromptLabel.graphics.foregroundColor = negPromptLabel.graphics.newPen(negPromptLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 var negPromptInput = mainPanelTab.add("edittext", undefined, "", {multiline: true, scrolling: true, wantReturn: true});
-negPromptInput.size = [inputFieldWidth, 25];
+negPromptInput.preferredSize.width = 345.3; 
 
 var samplingSizeGroup = mainPanelTab.add("group");
 var samplingSizeLabel = samplingSizeGroup.add("statictext", undefined, "Sample:");
 samplingSizeLabel.graphics.foregroundColor = samplingSizeLabel.graphics.newPen(samplingSizeLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-samplingSizeLabel.size = [100,20]
+
 var samplingSizeSlider = samplingSizeGroup.add("slider", undefined, 20, 1, 150);
-samplingSizeSlider.size = [300, (panelHeight - 20) * 0.05];
+
 var samplingSize = samplingSizeGroup.add("statictext", undefined, "20");
 
 samplingSizeSlider.onChange = function () {
@@ -61,11 +61,11 @@ samplingSizeSlider.onChange = function () {
 var batchSizeGroup = mainPanelTab.add("group");
 var batchSizeLabel = batchSizeGroup.add("statictext", undefined, "Batch Size:");
 batchSizeLabel.graphics.foregroundColor = batchSizeLabel.graphics.newPen(batchSizeLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-batchSizeLabel.size = [100,20]
+
 var batchSizeSlider = batchSizeGroup.add("slider", undefined, 1, 1, 100);
-batchSizeSlider.size = [300, (panelHeight - 20) * 0.05];
+
 var batchSize = batchSizeGroup.add("statictext", undefined, "1");
-batchSize.size = [50, 20];
+
 batchSize.readonly = true;
 
 batchSizeSlider.onChange = function () {
@@ -75,11 +75,11 @@ batchSizeSlider.onChange = function () {
 var batchCountGroup = mainPanelTab.add("group");
 var batchCountLabel = batchCountGroup.add("statictext", undefined, "Batch Count:");
 batchCountLabel.graphics.foregroundColor = batchCountLabel.graphics.newPen(batchCountLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-batchCountLabel.size = [100,20]
+
 var batchCountSlider = batchCountGroup.add("slider", undefined, 1, 1, 10);
-batchCountSlider.size = [300, (panelHeight - 20) * 0.05];
+
 var batchCount = batchCountGroup.add("statictext", undefined, "1");
-batchCount.size = [50, 20];
+
 batchCount.readonly = true;
 
 batchCountSlider.onChange = function () {
@@ -89,11 +89,11 @@ batchCountSlider.onChange = function () {
 var cfgScaleGroup = mainPanelTab.add("group");
 var cfgScaleLabel = cfgScaleGroup.add("statictext", undefined, "CFG Scale:");
 cfgScaleLabel.graphics.foregroundColor = cfgScaleLabel.graphics.newPen(cfgScaleLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
-cfgScaleLabel.size = [100,20]
+
 var cfgScaleSlider = cfgScaleGroup.add("slider", undefined, 10.0,0.0,30.0);
-cfgScaleSlider.size = [300, (panelHeight - 20) * 0.05];
+
 var cfgScale = cfgScaleGroup.add("statictext", undefined, "10.0");
-cfgScale.size = [50, 20];
+
 cfgScale.readonly = true;
 cfgScaleSlider.onChange = function () {
     cfgScale.text = (Math.round(cfgScaleSlider.value * 2) / 2).toFixed(1);
@@ -101,11 +101,11 @@ cfgScaleSlider.onChange = function () {
  
 var denoisingStrengthGroup = mainPanelTab.add("group");
 var denoisingStrengthLabel = denoisingStrengthGroup.add("statictext", undefined, "Denoising Strength:");
-denoisingStrengthLabel.size = [100,20]
+
 denoisingStrengthLabel.graphics.foregroundColor = denoisingStrengthLabel.graphics.newPen(denoisingStrengthLabel.graphics.PenType.SOLID_COLOR, labelColor, 1);
 
 var denoisingStrengthSlider = denoisingStrengthGroup.add("slider", undefined, 0.50, 0.00, 1.00);
-denoisingStrengthSlider.size = [300, (panelHeight - 20) * 0.05];
+
 var denoisingStrength = denoisingStrengthGroup.add("statictext", undefined, "0.50");
 
 
@@ -126,7 +126,7 @@ seedLabel.graphics.foregroundColor = seedLabel.graphics.newPen(seedLabel.graphic
 
 var seedInput = checkBoxGroup.add("edittext", undefined, "-1");
 seedInput.characters = 25;
-seedInput.size = [90,25];
+
 
 var resetSeedButton = checkBoxGroup.add("button", undefined, "Reset");
 resetSeedButton.onClick = function () {
@@ -145,7 +145,7 @@ function saveJSONToFile(jsonData, filePath) {
 var buttonGroup = mainPanelTab.add("group");
 buttonGroup.orientation = "row";
 buttonGroup.alignChildren = ["fill", "top"]; // Set the alignment of the children to fill the available space
-buttonGroup.alignment = "left";
+buttonGroup.alignment = ["left", "center"];
 
 function roundToNearestStep(value, step) {
     return Math.round(value / step) * step;
@@ -156,12 +156,12 @@ var widthGroup = buttonGroup.add("group");
 widthGroup.orientation = "row";
 var widthLabel = widthGroup.add("statictext");
 widthLabel.text = "Width:";
-widthLabel.size = [40, 20];
+
 var widthInput = widthGroup.add("edittext");
 widthInput.text = "512";
-widthInput.size = [35, 20];
+
 var widthSlider = widthGroup.add("slider", undefined, 512, 0, 1280);
-widthSlider.size = [81, 20];
+
 
 widthInput.onChange = function() {
     var inputValue = parseInt(this.text);
@@ -183,12 +183,12 @@ var heightGroup = buttonGroup.add("group");
 heightGroup.orientation = "row";
 var heightLabel = heightGroup.add("statictext");
 heightLabel.text = "Heighth:";
-heightLabel.size = [40, 20];
+
 var heightInput = heightGroup.add("edittext");
 heightInput.text = "512";
-heightInput.size = [35, 20];
+
 var heightSlider = heightGroup.add("slider", undefined, 512, 0, 1024);
-heightSlider.size = [82, 20];
+
 
 heightInput.onChange = function() {
     var inputValue = parseInt(this.text);
@@ -360,7 +360,7 @@ function getMostRecentFolder(path) {
 
 
 var sendToTxt2ImgButton = customButtonGroup.add("button", undefined, "Send to txt2img");
-sendToTxt2ImgButton.size = [(panelWidth - 50) / 2, 25];
+
 
 sendToTxt2ImgButton.onClick = function () {
 	var promptV = promptInput.text;
@@ -404,7 +404,7 @@ sendToTxt2ImgButton.onClick = function () {
 
 
 var sendToImg2ImgButton = customButtonGroup.add("button", undefined, "Send to img2img");
-sendToImg2ImgButton.size = [(panelWidth - 50) / 2, 25];
+
 
 sendToImg2ImgButton.onClick = function () {
 	var enableBatchV = enableBatchCheckbox.value ? true : false;

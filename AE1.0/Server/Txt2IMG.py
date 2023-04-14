@@ -13,7 +13,8 @@ parser.add_argument("steps", type=int)
 parser.add_argument("cfg_scale", type=int)
 parser.add_argument("restore_faces", type=bool)
 parser.add_argument("negative_prompt")
-
+parser.add_argument("width")
+parser.add_argument("height")
 args = parser.parse_args()
 
 url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
@@ -24,10 +25,11 @@ data = {
   "batch_size": args.batch_size,
   "steps": args.steps,
   "cfg_scale": args.cfg_scale,
-  "width": 512,
-  "height": 512,
+  "width": args.width,
+  "height": args.height,
   "restore_faces": args.restore_faces,
   "negative_prompt": args.negative_prompt,
+
 }
 
 response = requests.post(url, json=data, timeout=None)

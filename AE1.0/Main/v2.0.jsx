@@ -8,19 +8,151 @@ var serverFolder = new Folder("..//Server");
 
 var txt2imgScriptFile = new File(scriptsFolder.parent.fullName + "//Server//Txt2IMG.py");
 var img2imgScriptFile = new File(scriptsFolder.parent.fullName + "//Server//Img2Img.py");
-
+var pythonScriptPath = new File(scriptsFolder.parent.fullName + "//Server//Models.py");
+var updatemodelPath = new File(scriptsFolder.parent.fullName + "//Server//options.py");
 var initialSolidLayerPosition;
 var initialVideoLayerPosition;
+var modelnameV;
 var mWidth = 512;
 var mHeight = 512;
 
 var scriptFile = new File($.fileName);
 var scriptFolder = scriptFile.parent;
 var projectFolder = scriptFolder.parent;
+var files = [];
+var currentIndex = -1;
 
-// Set the inpaint and output directories as relative paths
-var inpaintDir = new Folder(projectFolder.fsName + '/Inpaint');
-var outputDir = new Folder(projectFolder.fsName + '/Outputs');
+
+function getLatestImageFile() {
+  var latestFile = null;
+
+  // Create a new instance of the File System Object
+  var fso = new ActiveXObject("Scripting.FileSystemObject");
+
+  // Get a reference to the outputsFolder path
+  var outputsFolderPath = outputsFolder.fsName;
+
+  // Get all subfolders within the outputsFolder path
+  var subfolders = [];
+  var folder = fso.GetFolder(outputsFolderPath);
+  var folderEnumerator = new Enumerator(folder.SubFolders);
+  while (!folderEnumerator.atEnd()) {
+    var subfolder = folderEnumerator.item();
+    if (subfolder.Name.match(/^output_session_\d+$/)) {
+      subfolders.push(subfolder);
+    }
+    folderEnumerator.moveNext();
+  }
+
+  // Check if there are any subfolders
+  if (subfolders.length === 0) {
+    return null;
+  }
+
+  // Get the most recent subfolder
+  subfolders.sort(function(a, b) {
+    return a.DateLastModified > b.DateLastModified ? -1 : 1;
+  });
+  var latestSubfolder = subfolders[0];
+
+  // Get all image files within the most recent subfolder
+  var imageFiles = [];
+  var fileEnumerator = new Enumerator(latestSubfolder.Files);
+  while (!fileEnumerator.atEnd()) {
+    var file = fileEnumerator.item();
+    if (file.Name.match(/\.(jpg|png|gif)$/i)) {
+      imageFiles.push(file);
+    }
+    fileEnumerator.moveNext();
+  }
+
+  // Check if there are any image files
+  if (imageFiles.length === 0) {
+    return null;
+  }
+
+  // Get the most recent image file
+  imageFiles.sort(function(a, b) {
+    return a.DateLastModified > b.DateLastModified ? -1 : 1;
+  });
+  latestFile = imageFiles[0];
+
+  return latestFile;
+}
+
+
+function getFilesRecursive(folder, filterFunc, folderFilterFunc) {
+  var allFiles = folder.getFiles();
+  var matchingFiles = [];
+  for (var i = 0; i < allFiles.length; i++) {
+    var file = allFiles[i];
+    if (file instanceof Folder) {
+      if (folderFilterFunc && !folderFilterFunc(file)) {
+        continue;
+      }
+      var subFolderFiles = getFilesRecursive(file, filterFunc, folderFilterFunc);
+      matchingFiles = matchingFiles.concat(subFolderFiles);
+    } else if (filterFunc(file)) {
+      matchingFiles.push(file);
+    }
+  }
+  return matchingFiles;
+}
+
+function importPngSequence(file) {
+    if (!file) {
+        return;
+    }
+
+    var importOptions = new ImportOptions(file);
+    importOptions.sequence = true;
+    importOptions.forceAlphabetical = true;
+
+    var importedSequence = app.project.importFile(importOptions);
+
+    // 1. Place the imported sequence into the active composition as a new layer.
+    var activeComp = app.project.activeItem;
+    if (activeComp && activeComp instanceof CompItem) {
+        var sequenceLayer = activeComp.layers.add(importedSequence, activeComp.duration);
+
+        // Find the video layer, assuming it's the second layer in the composition
+        var videoLayer = activeComp.layer(3);
+
+        // 2. Resize the composition to the size of the video layer.
+        if (videoLayer) {
+            activeComp.width = videoLayer.width;
+            activeComp.height = videoLayer.height;
+        }
+
+        // 3. Align the Solid layer 
+        var solidLayer = activeComp.layer(2);
+        var xOffset = 0;
+        var yOffset = 0;
+        solidLayer.position.setValue([initialSolidLayerPosition[0] + xOffset, initialSolidLayerPosition[1] + yOffset]);
+
+        // 4. Adjust the position of the newly imported sequence to the 'var initialSolidLayerPosition;' global variable.
+        sequenceLayer.position.setValue(initialSolidLayerPosition);
+    
+
+    return importedSequence;
+}
+};
+
+
+// Read the JSON data from the file
+function readJsonFile(filePath) {
+    var file = new File(filePath);
+    var json = null;
+
+    if (file.exists) {
+        file.open("r");
+        json = JSON.parse(file.read());
+        file.close();
+    }
+
+    return json;
+}
+
 
 function saveJSONToFile(jsonData, filePath) {
     var file = new File(filePath);
@@ -78,7 +210,7 @@ var group2 = group1.add("group", undefined, {name: "group2"});
 var group3 = group2.add("group", undefined, {name: "group3"}); 
   group3.orientation = "column"; 
   group3.alignChildren = ["left","center"]; 
-  group3.spacing = 3; 
+  group3.spacing = 10; 
   group3.margins = 0; 
   
 function roundToNearestStep(value, step) {
@@ -107,7 +239,7 @@ var widthSlider = group3.add("slider", undefined, undefined, undefined, undefine
   widthSlider.maxvalue = 1024; 
   widthSlider.value = 512; 
   widthSlider.preferredSize.width = 90; 
-  widthSlider.preferredSize.height = 25; 
+
 
 widthInput.onChange = function() {
     var inputValue = parseInt(this.text);
@@ -130,7 +262,7 @@ var group5 = group2.add("group", undefined, {name: "group5"});
   group5.preferredSize.height = 40; 
   group5.orientation = "column"; 
   group5.alignChildren = ["left","center"]; 
-  group5.spacing = 0; 
+  group5.spacing = 10; 
   group5.margins = 0; 
 
 // GROUP6
@@ -143,7 +275,7 @@ var group6 = group5.add("group", undefined, {name: "group6"});
 
 var heightLabel = group6.add("statictext", undefined, undefined, {name: "heightLabel"}); 
   heightLabel.text = "Height:"; 
-  heightLabel.preferredSize.height = 19; 
+  heightLabel.preferredSize.height = 15; 
 
 var heightInput = group6.add('edittext {properties: {name: "heightInput"}}'); 
   heightInput.text = "512"; 
@@ -199,11 +331,12 @@ getMask.onClick = function() {
         clipLayer.trackMatteType = TrackMatteType.ALPHA;
         app.endUndoGroup();
 };
-	
+
 var maskport = group7.add("button", undefined, undefined, {name: "maskport"}); 
   maskport.text = "Set Export"; 
   maskport.preferredSize.width = 90; 
 
+	
 maskport.onClick = function() {
 	app.beginUndoGroup('Link and Center');
         // Get the existing comp
@@ -232,9 +365,8 @@ maskport.onClick = function() {
         existingComp.pixelAspect = 1;
         existingComp.resolutionFactor = [1,1];
         solidLayer.property("Position").setValue([mWidth/2, mHeight/2, 0]);
-        app.endUndoGroup();
+        app.endUndoGroup();      
         
-        getMaskButton.text = "Get Mask";
         exportPNGSequence(existingComp);
     }
 
@@ -307,6 +439,7 @@ function exportPNGSequence() {
   }
 };
   
+
 // GROUP8
 // ======
 var group8 = tab1.add("group", undefined, {name: "group8"}); 
@@ -323,23 +456,69 @@ var statictext1 = group8.add("statictext", undefined, undefined, {name: "statict
 // GROUP9
 // ======
 var group9 = group8.add("group", undefined, {name: "group9"}); 
-  group9.orientation = "row"; 
-  group9.alignChildren = ["left","center"]; 
-  group9.spacing = 10; 
-  group9.margins = 0; 
+group9.orientation = "row"; 
+group9.alignChildren = ["left","center"]; 
+group9.spacing = 10; 
+group9.margins = 0; 
 
-var modelList_array = ["Item 1","-","Item 2"]; 
+// Specify the path to the JSON file using the path variables
+var jsonFilePath = new File(serverFolder.fsName + "/output_data.json");
+
+// Initialize the dropdown list with an empty array
+var modelList_array = [];
 var modelList = group9.add("dropdownlist", undefined, undefined, {name: "modelList", items: modelList_array}); 
-  modelList.selection = 0; 
-  modelList.preferredSize.width = 143; 
-  modelList.preferredSize.height = 23; 
-  modelList.alignment = ["left","center"]; 
-
+modelList.preferredSize.width = 143; 
+modelList.preferredSize.height = 23; 
+modelList.alignment = ["left","center"]; 
+// Add an event listener for the modelList dropdown
+modelList.onChange = function() {
+    if (modelList.selection) {
+        modelnameV = modelList.selection.text;
+    }
+};
 var modelrefresh = group9.add("button", undefined, undefined, {name: "modelrefresh"}); 
-  modelrefresh.text = "Refresh"; 
+modelrefresh.text = "Refresh"; 
+
+modelrefresh.onClick = function() {
+	var command = 'python "' + pythonScriptPath.fsName + '"';
+	
+	
+    system.callSystem(command);
+	 $.sleep(100);
+    var data = readJsonFile(jsonFilePath);
+
+    if (data) {
+        modelList.removeAll();
+        modelList_array = data.map(function(item) {
+            return item.title;
+        });
+
+        for (var i = 0; i < modelList_array.length; i++) {
+            modelList.add("item", modelList_array[i]);
+        }
+        
+        // Set the first item as the default selected item
+        if (modelList.items.length > 0) {
+            modelList.selection = modelList.items[0];
+        }
+    } else {
+        alert("Failed to load data.");
+    }
+};
 
 var modelupdate = group9.add("button", undefined, undefined, {name: "modelupdate"}); 
-  modelupdate.text = "Update"; 
+modelupdate.text = "Update"; 
+
+
+// Update button onClick event
+modelupdate.onClick = function() {
+    var command = 'python "' + updatemodelPath.fsName + '"';
+	command += ' "' + modelnameV + '"';
+	
+	alert(command);
+	
+    system.callSystem(command);
+};
 
 // GROUP10
 // =======
@@ -397,8 +576,9 @@ var samplingSizeLabel = group13.add("statictext", undefined, undefined, {name: "
   samplingSizeLabel.text = "Sample Size"; 
 
 var samplingSizeSlider = group13.add("slider", undefined, undefined, undefined, undefined, {name: "samplingSizeSlider"}); 
-  samplingSizeSlider.minvalue = 0; 
+  samplingSizeSlider.minvalue = 1; 
   samplingSizeSlider.maxvalue = 100;  
+  samplingSizeSlider.value = 20; 
   samplingSizeSlider.preferredSize.width = 80; 
 
 var samplingSize = group13.add("statictext", undefined, undefined, {name: "samplingSize"}); 
@@ -420,8 +600,9 @@ var batchSizeLabel = group14.add("statictext", undefined, undefined, {name: "bat
   batchSizeLabel.text = "Batch Size"; 
 
 var batchSizeSlider = group14.add("slider", undefined, undefined, undefined, undefined, {name: "batchSizeSlider"}); 
-  batchSizeSlider.minvalue = 0; 
+  batchSizeSlider.minvalue = 1; 
   batchSizeSlider.maxvalue = 100; 
+  batchSizeSlider.value = 1; 
   batchSizeSlider.preferredSize.width = 80; 
 
 var batchSize = group14.add("statictext", undefined, undefined, {name: "batchSize"}); 
@@ -443,8 +624,9 @@ var batchCountlabel = group15.add("statictext", undefined, undefined, {name: "ba
   batchCountlabel.text = "Batch Count"; 
 
 var batchCountSlider = group15.add("slider", undefined, undefined, undefined, undefined, {name: "batchCountSlider"}); 
-  batchCountSlider.minvalue = 0; 
+  batchCountSlider.minvalue = 1; 
   batchCountSlider.maxvalue = 100;  
+  batchCountSlider.value = 1; 
   batchCountSlider.preferredSize.width = 80; 
 
 var batchCount = group15.add("statictext", undefined, undefined, {name: "batchCount"}); 
@@ -498,7 +680,8 @@ var group18 = group17.add("group", undefined, {name: "group18"});
 
 var cfgScaleSlider = group18.add("slider", undefined, undefined, undefined, undefined, {name: "cfgScaleSlider"}); 
   cfgScaleSlider.minvalue = 0; 
-  cfgScaleSlider.maxvalue = 30;  
+  cfgScaleSlider.maxvalue = 30;
+  cfgScaleSlider.value = 10;   
   cfgScaleSlider.preferredSize.width = 275; 
 
 var cfgScale = group18.add('statictext {properties: {name: "cfgScale"}}'); 
@@ -575,6 +758,7 @@ sendToTxt2IMGButton.onClick = function () {
 	var roundedCfgScaleV = Math.round(cfgScaleV * 2) / 2; // Round to the nearest 0.5
     var seedV = seedInput.text;
     var restoreFaces = restoreFacesCheckbox.value ? true : false;
+	
 
     // Gather data
     var data = {
@@ -587,8 +771,12 @@ sendToTxt2IMGButton.onClick = function () {
 	  negative_prompt: negPromptV,
 	  width: mWidth,
 	  height: mHeight,
+
 	 };
-	 
+
+
+    // Set the modelnameV variable
+    var modelnameV = modelList.items[0].text;
     // Call the Txt2IMG.py script with the data as a system call
     var command = 'python "' + txt2imgScriptFile.fsName + '"';
     data.prompt = promptInput.text;
@@ -602,7 +790,9 @@ sendToTxt2IMGButton.onClick = function () {
     command += ' "' + data.negative_prompt + '"';
 	command += ' "' + data.width + '"';
 	command += ' "' + data.height + '"';
-    system.callSystem(command);
+	alert(command);
+	system.callSystem(command);
+
 };
 
 var sendToImg2ImgButton = group21.add("button", undefined, undefined, {name: "sendToImg2ImgButton"}); 
@@ -635,7 +825,7 @@ sendToImg2ImgButton.onClick = function () {
         restore_faces: restoreFaces,
         denoising_strength: roundedDenoisingStrengthV,
 		width: mWidth,
-	    height: mHeight	
+	    height: mHeight,	
     };
 
     if (enableControlnetCheckbox.value) {
@@ -673,76 +863,120 @@ sendToImg2ImgButton.onClick = function () {
 		system.callSystem(command);
 };
 
-function importPngSequence(file) {
-    if (!file) {
-        return;
-    }
-
-    var importOptions = new ImportOptions(file);
-    importOptions.sequence = true;
-    importOptions.forceAlphabetical = true;
-
-    var importedSequence = app.project.importFile(importOptions);
-
-    // 1. Place the imported sequence into the active composition as a new layer.
-    var activeComp = app.project.activeItem;
-    if (activeComp && activeComp instanceof CompItem) {
-        var sequenceLayer = activeComp.layers.add(importedSequence, activeComp.duration);
-
-        // Find the video layer, assuming it's the second layer in the composition
-        var videoLayer = activeComp.layer(3);
-
-        // 2. Resize the composition to the size of the video layer.
-        if (videoLayer) {
-            activeComp.width = videoLayer.width;
-            activeComp.height = videoLayer.height;
-        }
-
-        // 3. Align the Solid layer 
-        var solidLayer = activeComp.layer(2);
-        var xOffset = 0;
-        var yOffset = 0;
-        solidLayer.position.setValue([initialSolidLayerPosition[0] + xOffset, initialSolidLayerPosition[1] + yOffset]);
-
-        // 4. Adjust the position of the newly imported sequence to the 'var initialSolidLayerPosition;' global variable.
-        sequenceLayer.position.setValue(initialSolidLayerPosition);
-    
-
-    return importedSequence;
-}
-}
 
 var importButton = group21.add("button", undefined, undefined, {name: "importButton"}); 
-  importButton.text = "Impose"; 
-  importButton.preferredSize.width = 80; 
+importButton.text = "Impose"; 
+importButton.preferredSize.width = 80; 
 importButton.onClick = function () {
-    var selectedFile = File.openDialog("Select the first .png file of the sequence", "PNG files: *.png", false);
-    if (selectedFile) {
-        app.beginUndoGroup("Import PNG Sequence");
-        importPngSequence(selectedFile);
-        app.endUndoGroup();
-    }
+    app.beginUndoGroup("Import PNG Sequence");
+    importPngSequence();
+    app.endUndoGroup();
 };
+
 // TAB2
 // ====
-var tab2 = tpanel1.add("tab", undefined, undefined, {name: "tab2"}); 
-  tab2.text = "Review"; 
-  tab2.orientation = "column"; 
-  tab2.alignChildren = ["center","top"]; 
-  tab2.spacing = 8; 
-  tab2.margins = 12; 
+var tab2 = tpanel1.add("tab", undefined, undefined, {name: "tab2"});
+tab2.text = "Review";
+tab2.orientation = "column";
+tab2.alignChildren = ["center", "top"];
+tab2.spacing = 8;
+tab2.margins = 12;
 
 // GROUP22
 // =======
-var group22 = tab2.add("group", undefined, {name: "group22"}); 
-  group22.orientation = "row"; 
-  group22.alignChildren = ["center","center"]; 
-  group22.spacing = 30; 
-  group22.margins = 0; 
+var group22 = tab2.add("group", undefined, {name: "group22"});
+group22.orientation = "column";
+group22.alignChildren = ["center", "center"];
+group22.spacing = 8;
+group22.margins = 12;
 
-var button1 = group22.add("button", undefined, undefined, {name: "button1"}); 
-  button1.text = "Impose"; 
-  button1.preferredSize.width = 80; 
+// SCROLL PANEL
+// ============
+var scrollPanel = group22.add("panel", undefined, undefined, {name: "scrollPanel"});
+scrollPanel.size = [256, 256];
+scrollPanel.alignChildren = ["center", "center"];
+scrollPanel.margins = 0;
+
+// IMAGE BUTTON
+var imageButton = scrollPanel.add("iconbutton", undefined, undefined, {name: "imageButton"});
+imageButton.helpTip = "Click to view the full-size image";
+imageButton.size = [256, 256];
+imageButton.alignment = ["center", "center"];
+
+// ARROW BUTTONS
+var arrowGroup = scrollPanel.add("group", undefined);
+arrowGroup.alignment = ["center", "bottom"];
+
+var arrowLeft = arrowGroup.add("button", undefined, "◄");
+arrowLeft.size = [20, 20];
+
+var arrowRight = arrowGroup.add("button", undefined, "►");
+arrowRight.size = [20, 20];
+
+// UPDATE BUTTON
+var updateButton = group22.add("button", undefined, "Update", {name: "updateButton"});
+
+// SET MARGINS AND SPACING
+group22.margins.top = 20;
+group22.spacing = 10;
+
+
+function loadImage(file) {
+  var image = ScriptUI.newImage(file);
+  var width = image.width / 4;
+  var height = image.height / 4;
+  if (width > 256 || height > 256) {
+    var ratio = Math.min(256 / width, 256 / height);
+    width *= ratio;
+    height *= ratio;
+    image.resize(width, height);
+    imageButton.image = ScriptUI.newImage(file);
+  } else {
+    imageButton.image = image;
+  }
+}
+
+arrowLeft.onClick = function() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    loadImage(files[currentIndex]);
+  }
+}
+
+arrowRight.onClick = function() {
+  if (currentIndex < files.length - 1) {
+    currentIndex++;
+    loadImage(files[currentIndex]);
+  }
+}
+
+updateButton.onClick = function() {
+  updateFiles();
+}
+
+
+// SET FOCUS TO SCROLL PANEL
+// =========================
+scrollPanel.active = true;
+
+
+
+
+// ADD EVENT LISTENERS
+// ===================
+imageButton.addEventListener("click", function() {
+  var fullSizeImageWindow = new Window("dialog", "Full Size Image");
+  fullSizeImageWindow.margins = [0, 0, 0, 0];
+  fullSizeImageWindow.alignChildren = ["center", "center"];
+  var fullSizeImage = fullSizeImageWindow.add("image", undefined, undefined, {name: "fullSizeImage"});
+  fullSizeImage.image = ScriptUI.newImage(imagePath);
+  fullSizeImageWindow.show();
+});
+
+// SET FOCUS TO SCROLL PANEL
+// =========================
+scrollPanel.active = true;
+
 
 // TAB3
 // ====

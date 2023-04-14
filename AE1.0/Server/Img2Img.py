@@ -35,6 +35,7 @@ parser.add_argument("--output-dir", default="Outputs")
 parser.add_argument("denoising_strength")
 parser.add_argument("width")
 parser.add_argument("height")
+
 #Controlnet
 parser.add_argument("--controlnet_on", type=str2bool, nargs='?', const=True, default=False)
 parser.add_argument("--weight", type=float, default=1)
@@ -138,7 +139,7 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "inpaint_full_res": 0,
         "inpaint_full_res_padding": 32,
         "inpainting_mask_invert": 0,
-        
+     
         }
     if args.controlnet_on:
         data["controlnet_units"] = [
@@ -146,6 +147,7 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
                 "mode" : args.model,
                 "module": args.module,
                 "resize_mode": args.resize_mode,
+                "weight": 1.75,
        
             }
         ]
