@@ -6,6 +6,7 @@ import sys
 import json
 import glob
 import os
+from PIL import Image
 
 standard_url = "http://127.0.0.1:7860/sdapi/v1/img2img"
 controlnet_url = "http://127.0.0.1:7860/controlnet/img2img"
@@ -102,7 +103,7 @@ if not os.path.exists(output_session_folder):
     os.makedirs(output_session_folder)
 
 for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_input_images, encoded_inpaint_images)):
-            # Prepare data for API call
+    # Prepare data for API call
     data = {
         "prompt": args.prompt,
         "seed": args.seed,
@@ -139,16 +140,14 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
         "inpaint_full_res": 0,
         "inpaint_full_res_padding": 32,
         "inpainting_mask_invert": 0,
-     
-        }
+    }
     if args.controlnet_on:
         data["controlnet_units"] = [
             {
                 "mode" : args.model,
                 "module": args.module,
                 "resize_mode": args.resize_mode,
-                "weight": 1.75,
-       
+                "weight": 1.75,      
             }
         ]
 
@@ -158,9 +157,8 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
     else:
         url = standard_url
 
-    print(json.dumps(data, indent=2))
+    
     response = requests.post(url, json=data, timeout=None)
-
 
     if response.status_code != 200:
         print(f"Error processing image {i}: {response.status_code}, {response.text}")
@@ -168,16 +166,31 @@ for i, (encoded_init_image, encoded_inpaint_image) in enumerate(zip(encoded_inpu
 
     result = response.json()
     result_images = [base64.b64decode(img) for img in result["images"]]
+    result = response.json()
+result_images = [base64.b64decode(img) for img in result["images"]]
+info = json.loads(result["info"])
 
-    for k, result_image in enumerate(result_images):
-        output_file_path = os.path.join(output_session_folder, f"output_{i}.png")
-        with open(output_file_path, "wb") as output_file:
-            output_file.write(result_image)
-        print(f"Output image {k} saved at: {output_file_path}")
+# Create a dictionary to store image information
+image_info = {}
+
+# Store seed in the dictionary
+image_info["seed"] = info["seed"]
+
+
+# Iterate over result images
+for k, result_image in enumerate(result_images):
+    # Set the output file name to include the image index and the seed value
+    output_file_path = os.path.join(output_session_folder, f"output_{i}_seed_{info['seed']}_index_{k}.png")
+    # Write the result image to the output file
+    with open(output_file_path, "wb") as output_file:
+        output_file.write(result_image)
+    # Print the output file path
+    print(f"Output image {k} saved at: {output_file_path}")
 
     # If batch process, save the image to the input directory for the next iteration
     if args.batch_size > 1 and k < args.batch_size - 1:
-        input_file_path = os.path.join(args.img2img_batch_input_dir, f"input_{i * args.batch_size + 1}.png")
+        input_file_path = os.path.join(args.img2img_batch_input_dir, f"input_{i * args.batch_size + k + 1}.png")
         with open(input_file_path, "wb") as input_file:
             input_file.write(result_image)
         print(f"Input image {i * args.batch_size + k + 1} saved at: {input_file_path}")
+
