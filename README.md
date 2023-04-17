@@ -1,8 +1,10 @@
 # AE_Stable-Diffision
 NOTE. I believe many of the errors with generation are occuring due to when AE is started vs the webUI. Start the webUI first, then AE. If that doesn't work, and the project you're trying to use it on won't let you do it, try restarting again, and use a clean project.
 
-As of 4/12/23, all options (aside from the controlnet UI sliders and such) should be functional. 
-Remember to start your webuser-ui first. 
+Server and UI are updated to use socket objects instead of system calls. Greatly lightens the load on system, and keeps AE responsive. Just go to the 'Options' Tab, and click 'start server.' Leave that up and youre good to go. Webuser-ui will still need to be running. 
+
+Borrowed server-side code from [@AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin](https://github.com/AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin)
+
 
 The beginnings of a full after effects plugin that integrates Auto1111 Stable diffusion. Useable as a scriptUI for now.
 This Project contains several folders. It is best to keep things together, but where you keep it on your system does not matter.
