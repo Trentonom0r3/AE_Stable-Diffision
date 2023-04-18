@@ -19,13 +19,13 @@ Make sure you are running your webuser-ui.bat file and the local server is up.
 Also, make sure you have --api enabled.
 
 NOTE! Please install the output and render modules into your AE copy before running the script. These will allow the 'Get Mask' Function to work properly.
+[Screenshot 2023-04-14 105311](https://user-images.githubusercontent.com/130304830/232093618-e4893c09-06cf-485b-8cb1-d144101a38a4.png)
 
 Functionality-
 This creates a scriptUI panel for Adobe After Effects that provides basic parameters for Auto1111 stable diffusion image generation.
 Currently, the 'method' and 'process' dropdowns are unusable, but do not affect functionality. 
 You will recognize the parameters used in the UI, so I won't go into detail on those.
 
-![Screenshot 2023-04-09 114314](https://user-images.githubusercontent.com/130304830/230786162-93daa3d3-f74b-42cc-9039-43fd592c8515.png)
 
 At the bottom of the UI, there are several buttons, most of which are self explanatory. 
 Txt2Img generates txt2img, img2img generates img2img.
@@ -48,7 +48,7 @@ If you notice the script freeze up, or buttons not working, there are a few thin
 
 Sometimes I have to do all 3, sometimes I only have to do one of those. But typically those will fix the issue. 
 Keep in mind as I mentioned earlier, literally all of this code was written by GPT4. I really don't understand all of it, but I will be continuing to learn and develop this, making it more optimized and have extra functionality.
-If you have any questions, feel free to ask and I will do my best to answer them!![Screenshot 2023-04-14 105311](https://user-images.githubusercontent.com/130304830/232093618-e4893c09-06cf-485b-8cb1-d144101a38a4.png)
+If you have any questions, feel free to ask and I will do my best to answer them!!
 
 
 
