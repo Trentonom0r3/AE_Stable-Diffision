@@ -31,13 +31,14 @@ At the bottom of the UI, there are several buttons, most of which are self expla
 Txt2Img generates txt2img, img2img generates img2img.
 'Get Mask' Creates a 512x512px solid that the user can move to wherever they'd like. I move it to where I've rotoscoped, as thats what I use my Img2Img for. 
 After moving the solid to the proper position over your mask (rotoscopes work best for this, masks leave a white image in img2img and dont blend as well)
+
 Click the 'Confirm?' button. This will link the layers, center the comp, and export your input and inpaint images.
+
 Next, mess around with your parameters, and then hit img2img. This will send the input and inpaint images to be generated using your prompts and parameters. 
 I've found it to be difficult with some things, great on others-- just make sure you use a rotoscope on your clip before using the script. 
 
 Once that has finished, you can click 'Impose.' This will have you select the output (it will be in the outputs folder), and it will import it into the same position as the solid layer before centering and cropping.
   NOTE- Impose is being kind of wonky, I need to mess with it some more as it isn't properly adding the layer to the same position, but it does add the layer to the comp for you still.
-'Clear cache and render queue' - This is self explanatory, though it doesn't clear the cache currently. 
 
 
 Couple of things!
