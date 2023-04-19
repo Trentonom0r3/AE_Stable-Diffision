@@ -18,8 +18,23 @@ def str2bool(v):
         return False
     else:
         raise ValueError('Boolean value expected.')
-    
+def get_image_paths(directory):
+    image_extensions = ('.png', '.jpg', '.jpeg', '.gif')
+    return [os.path.join(directory, f) for f in os.listdir(directory) if f.lower().endswith(image_extensions)]
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+        return encoded_string   
+        
 async def img2imgmain(payload=None):
+    # Load and encode the image
+    image_path = payload.pop("image_path", None)
+    if image_path is not None:
+        encoded_image = encode_image(image_path)
+    else:
+        encoded_image = None
+    
     if payload is None:
         payload = {}
         # Extract the parameters that are not sent to the API  
@@ -72,7 +87,8 @@ async def img2imgmain(payload=None):
                           'guess_mode': payload.get('guess_mode', False),
                           
                       }
-                    ]
+                    ],
+                    "input_image": encoded_image,
                   }
                 }
               })
@@ -90,16 +106,6 @@ async def img2imgmain(payload=None):
     # Set the img2img_batch_input_dir and img2img_batch_inpaint_mask_dir arguments to the most recent input and inpaint folders
     img2img_batch_input_dir = input_folder
     img2img_batch_inpaint_mask_dir = inpaint_folder
-
-    def get_image_paths(directory):
-        image_extensions = ('.png', '.jpg', '.jpeg', '.gif')
-        return [os.path.join(directory, f) for f in os.listdir(directory) if f.lower().endswith(image_extensions)]
-
-    def encode_image(image_path):
-        with open(image_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            return encoded_string
-
     
     # Get image paths for input and inpaint masks
     input_image_paths = get_image_paths(img2img_batch_input_dir)
