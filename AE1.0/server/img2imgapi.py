@@ -18,57 +18,66 @@ def str2bool(v):
         return False
     else:
         raise ValueError('Boolean value expected.')
-
-async def img2img_request(payload):
-    print("img2ImgHandle received payload:", payload)
-
-    # Extract the parameters that are not sent to the API
-    controlnet_on = payload.pop("controlnet_on", False)
-    process_type = payload.pop("process_type", False)
-
-    async with httpx.AsyncClient(timeout=None) as client:
-        # Set url based on controlnet_on flag
-        if controlnet_on:
-            url = controlnet_url
-        else:
-            url = standard_url
-
-        response = await client.post(url, json=payload)
     
-        if response.status_code != 200:
-            print(f"Error processing image: {response.status_code}, {response.text}")
-            response.raise_for_status()
-
-        result = response.json()
-        result_images = [base64.b64decode(img) for img in result["images"]]
-        info = json.loads(result["info"])
-
-        return result_images, info
-
-
-
 async def img2imgmain(payload=None):
     if payload is None:
         payload = {}
-    # Update payload with new values
-    payload.update({
-        'mode': payload.get('mode', 4),
-        'prompt': payload.get('prompt', "A Dog"),
-        'negative_prompt': payload.get('negative_prompt', "A Cat"),
-        'seed': payload.get('seed', -1),
-        'batch_size': payload.get('batch_size', 1),
-        'steps': payload.get('steps', 20),
-        'cfg_scale': payload.get('cfg_scale', 10),
-        'restore_faces': payload.get('restore_faces', False),
-        'denoising_strength': payload.get('denoising_strength', 0.4),
-        'width': payload.get('width', 512),
-        'height': payload.get('height', 512),
-        'inpainting_fill': payload.get('inpainting_fill', 1),
-    })
-
-    # Extract the parameters that are not sent to the API
+        # Extract the parameters that are not sent to the API  
     controlnet_on = payload.pop("controlnet_on", False)
     process_type = payload.pop("process_type", False)
+    
+    if not controlnet_on:
+        # Update payload with new values
+        payload.update({
+            'mode': payload.get('mode', 4),
+            'prompt': payload.get('prompt', "A Dog"),
+            'negative_prompt': payload.get('negative_prompt', "A Cat"),
+            'seed': payload.get('seed', -1),
+            'batch_size': payload.get('batch_size', 1),
+            'steps': payload.get('steps', 20),
+            'cfg_scale': payload.get('cfg_scale', 10),
+            'restore_faces': payload.get('restore_faces', False),
+            'denoising_strength': payload.get('denoising_strength', 0.4),
+            'width': payload.get('width', 512),
+            'height': payload.get('height', 512),
+            'inpainting_fill': payload.get('inpainting_fill', 1),
+        })
+    else:
+        # Update payload with new values
+        payload.update({
+            'mode': payload.get('mode', 4),
+            'prompt': payload.get('prompt', "A Dog"),
+            'negative_prompt': payload.get('negative_prompt', "A Cat"),
+            'seed': payload.get('seed', -1),
+            'batch_size': payload.get('batch_size', 1),
+            'steps': payload.get('steps', 20),
+            'cfg_scale': payload.get('cfg_scale', 10),
+            'restore_faces': payload.get('restore_faces', False),
+            'denoising_strength': payload.get('denoising_strength', 0.4),
+            'width': payload.get('width', 512),
+            'height': payload.get('height', 512),
+            'inpainting_fill': payload.get('inpainting_fill', 1),
+            "alwayson_scripts": {
+              "controlnet": {
+                  "args": [
+                      {           
+                          'module': payload.get('module', 'depth'),
+                          'model': payload.get('model', 'control_depth-fp16 [400750f6]'),
+                          'weight': payload.get('weight', 1),
+                          'resize_mode': payload.get('resize_mode', 1),
+                          'low_vram': payload.get('low_vram', False),
+                          'processor_res': payload.get('processor_res', 384),
+                          'guidance_start': payload.get('guidance_start', 0),
+                          'guidance_end': payload.get('guidance_end', 1),
+                          'guess_mode': payload.get('guess_mode', False),
+                          
+                      }
+                    ]
+                  }
+                }
+              })
+    # Set controlnet_on flag
+    payload["controlnet_on"] = controlnet_on
 
     # Get the most recent input folder
     input_folders = glob.glob(os.path.join(os.path.dirname(__file__), '..', 'Inputs', '*'))
@@ -90,7 +99,7 @@ async def img2imgmain(payload=None):
         with open(image_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
             return encoded_string
-    
+
     
     # Get image paths for input and inpaint masks
     input_image_paths = get_image_paths(img2img_batch_input_dir)
@@ -105,7 +114,6 @@ async def img2imgmain(payload=None):
     if not os.path.exists(output_session_folder):
         os.makedirs(output_session_folder)
 
-    # Encode and send each image to the API call one at a time
     # Encode and send each image to the API call one at a time
     if process_type:
         for i in range(pathSize):
@@ -142,7 +150,7 @@ async def img2imgmain(payload=None):
         payload["mask"] = encoded_inpaint_images[0]
 
         # Send the image to the API call
-        result_images, info = await img2img_request(payload)
+        result_images, info = await img2img_request(payload, controlnet_on=controlnet_on)
 
         # Create a dictionary to store image information
         image_info = {}
@@ -151,13 +159,42 @@ async def img2imgmain(payload=None):
         image_info["seed"] = info["seed"]
 
         # Set the output file name to include the image index and the seed value
-        for i, (k, result_image) in enumerate(zip(range(pathSize), result_images)):
+        for k, result_image in enumerate(result_images):
             output_file_path = os.path.join(output_session_folder, f"output_seed_{info['seed']}_index_{k}.png")
             with open(output_file_path, "wb") as output_file:
                 # Write the result image to the output file
                 output_file.write(result_image)
 
+async def img2img_request(payload, controlnet_on=False):
+    print("img2ImgHandle received payload:", payload)
 
-if __name__ == "__img2imgmain__":
+    # Extract the parameters that are not sent to the API
+    controlnet_on = payload.pop("controlnet_on", True)
+    process_type = payload.pop("process_type", False)
+
+    async with httpx.AsyncClient(timeout=None) as client:
+        url = standard_url
+
+        try:
+            response = await client.post(url, json=payload)
+
+            if response.status_code != 200:
+                print(f"Error processing image: {response.status_code}, {response.text}")
+                response.raise_for_status()
+
+            result = response.json()
+            result_images = [base64.b64decode(img) for img in result["images"]]
+            info = json.loads(result["info"])
+
+            return result_images, info
+
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            raise e
+
+        finally:
+            await client.aclose()
+
+
+if __name__ == "__main__":
     asyncio.run(img2imgmain())
-

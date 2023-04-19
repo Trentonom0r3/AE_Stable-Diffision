@@ -457,31 +457,23 @@ async def swapModel(payload):  # Changed the parameter name to 'payload'
     response = requests.post(url=f'{sd_url}/sdapi/v1/options', json=option_payload)
 
 
-
 @router.post("/get_sd_models")
 async def get_sd_models(request: Request):
     response = requests.get(url=f'{sd_url}/sdapi/v1/sd-models')
     data = response.json()
     return data
-    
-import webbrowser
-@router.post("/open/url/")
-async def openUrl(request:Request):
-    try:
-        json = await request.json()
-    except: 
-        json = {}
 
-    url = "" 
-    print("json: ",json)
-    try:
-        url = json['url']
-        webbrowser.open(url)  # Go to example.com
-    except:
-        # print(f'exception: fail to send request to {sd_url}/sdapi/v1/{path}')
-        print(f'an error has occurred durning processing the request {request}')
-    # return response
-    return {"url":url}
+@router.post("/controlnet/model_list")
+async def controlnet_model(request: Request):
+    response = requests.get(url=f'{sd_url}/controlnet/model_list')
+    data = response.json()
+    return data
+    
+@router.post("/controlnet/module_list")
+async def controlnet_module(request: Request):
+    response = requests.get(url=f'{sd_url}/controlnet/module_list')
+    data = response.json()
+    return data
 
 
 
@@ -549,7 +541,15 @@ async def handle_request(request):
     elif request_type == "get_sd_models":
         request_data = None  # Initialize request_data to None
         response_data = await get_sd_models(request_data)
-        return response_data    
+        return response_data   
+    elif request_type == "controlnet/model_list":
+        request_data = None  # Initialize request_data to None
+        response_data = await controlnet_model(request_data)
+        return response_data  
+    elif request_type == "controlnet/module_list":
+        request_data = None  # Initialize request_data to None
+        response_data = await controlnet_module(request_data)
+        return response_data  
     else:
         return {"error": "Unknown request type"}
 
