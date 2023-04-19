@@ -656,6 +656,7 @@ var divider2 = group20.add("panel", undefined, undefined, {name: "divider2"});
 
 var enableControlnetCheckbox = group20.add("checkbox", undefined, undefined, {name: "enableControlnetCheckbox"}); 
   enableControlnetCheckbox.text = "Controlnet"; 
+  enableControlnetCheckbox.value = false;
 
 // GROUP21
 // =======
@@ -679,7 +680,6 @@ sendToTxt2IMGButton.onClick = function () {
 	var roundedCfgScaleV = Math.round(cfgScaleV * 2) / 2; // Round to the nearest 0.5
     var seedV = seedInput.text;
     var restoreFaces = restoreFacesCheckbox.value ? true : false;
-
     // Gather payload
      var payload = {
         prompt: promptV,
@@ -692,6 +692,8 @@ sendToTxt2IMGButton.onClick = function () {
 		width: mWidth,
 	    height: mHeight,	
 	}
+		
+		
   alert('Sending request: ' + JSON.stringify(payload));
   
   handleButton("txt2ImgHandle", payload);
@@ -704,6 +706,7 @@ var sendToImg2ImgButton = group21.add("button", undefined, undefined, {name: "se
 
 sendToImg2ImgButton.onClick = function () {
 	var enableBatchV = enableBatchCheckbox.value ? true : false;
+	var enableCnet = enableControlnetCheckbox.value ? true : false;
     var promptV = promptInput.text;
     var negPromptV = negPromptInput.text;
     var samplingSizeV = Math.round(samplingSizeSlider.value);
@@ -715,12 +718,18 @@ sendToImg2ImgButton.onClick = function () {
     var roundedDenoisingStrengthV = Math.round(denoisingStrengthV * 100) / 100; // Round to the nearest 0.01
     var seedV = seedInput.text;
     var restoreFaces = restoreFacesCheckbox.value ? true : false;
+	var vvRam = checkbox3.value ? true : false;
+	var PmodelV = PreProcessor.selection ? PreProcessor.selection.text : "";
+	var CmodelV = ControlnetModel.selection ? ControlnetModel.selection.text : "";
+
+	
 	 // Mode 1,2,3,4,5 --- 0= img2img 1=img2img sketch 2=Inpaint 3=Inpaint sketch 4= inpaint upload mask 5=batch
  //only need 0,4,5 currently. 
  //INPAINTING_FILL 0=fill 1= original 2=latent noise 3= latent nothing
     // Initialize payload object and assign values
+if (enableControlnetCheckbox.value == false) {
     var payload = {
-		mode: 4,
+        mode: 4,
         prompt: promptV,
         negative_prompt: negPromptV,
         seed: seedV,
@@ -729,26 +738,86 @@ sendToImg2ImgButton.onClick = function () {
         cfg_scale: roundedCfgScaleV,
         restore_faces: restoreFaces,
         denoising_strength: roundedDenoisingStrengthV,
-		width: mWidth,
-	    height: mHeight,	
-		inpainting_fill: 1,
-		process_type: enableBatchV,
-	}
-	
- 
+        width: mWidth,
+        height: mHeight,
+        inpainting_fill: 1,
+        process_type: enableBatchV,
+    };
+} else {
+    var payload = {
+		controlnet_on: enableCnet,
+        mode: 4,
+        prompt: promptV,
+        negative_prompt: negPromptV,
+        seed: seedV,
+        batch_size: batchSizeV,
+        steps: samplingSizeV,
+        cfg_scale: roundedCfgScaleV,
+        restore_faces: restoreFaces,
+        denoising_strength: roundedDenoisingStrengthV,
+        width: mWidth,
+        height: mHeight,
+        inpainting_fill: 1,
+        process_type: enableBatchV,
+        module: PmodelV,
+        model: CmodelV,
+        weight: 1,
+        resize_mode: 1,
+        low_vram: vvRam,
+        processor_res: 1, 
+        guidance_start: 1,
+        guidance_end: 1,
+        guess_mode: 1,
+    };
+}
+
   alert('Sending request: ' + JSON.stringify(payload));
   
   handleButton("img2img_handle", payload);
 };
 
-
 var importButton = group21.add("button", undefined, undefined, {name: "importButton"}); 
 importButton.text = "Impose"; 
 importButton.preferredSize.width = 80; 
 importButton.onClick = function () {
-    app.beginUndoGroup("Import PNG Sequence");
-    importPngSequence();
-    app.endUndoGroup();
+    var scriptFile = new File($.fileName);
+    var scriptFolder = scriptFile.path;
+    var mainFolder = new Folder(scriptFolder);
+
+    // Move up one level from the main folder to remove the "Main" folder from the path
+    mainFolder = mainFolder.parent;
+
+    var outputFolderPath = new Folder(mainFolder.fsName + "/Outputs");
+
+    // Save the current folder and change it to the output folder
+    var currentFolder = Folder.current;
+    Folder.current = outputFolderPath;
+    
+    var selectedFile = File.openDialog("Select a PNG file to import as a sequence:", "PNG files: *.png", false);
+
+    // Restore the original current folder
+    Folder.current = currentFolder;
+
+    if (!selectedFile) {
+        alert("No file selected.");
+        return;
+    }
+
+    function importPngSequence(imageFile) {
+        var importOptions = new ImportOptions(imageFile);
+        importOptions.sequence = true;
+        importOptions.forceAlphabetical = false;
+        var project = app.project;
+        app.beginUndoGroup("Import PNG Sequence");
+        var importedItem = project.importFile(importOptions);
+        app.endUndoGroup();
+
+        return importedItem;
+    }
+
+    var importedPngSequence = importPngSequence(selectedFile);
+
+    alert("Imported PNG sequence: " + importedPngSequence.name);
 };
 
 // TAB2
@@ -865,6 +934,332 @@ var tab3 = tpanel1.add("tab", undefined, undefined, {name: "tab3"});
   tab3.spacing = 10; 
   tab3.margins = 12; 
 
+// TAB3
+// ====
+var tab3 = tpanel1.add("tab", undefined, undefined, {name: "tab3"}); 
+  tab3.text = "Extras"; 
+  tab3.orientation = "column"; 
+  tab3.alignChildren = ["center","top"]; 
+  tab3.spacing = 10; 
+  tab3.margins = 12; 
+
+// CONTROLNET
+// ==========
+var Controlnet = tab3.add("panel", undefined, undefined, {name: "Controlnet"}); 
+  Controlnet.text = "ControlNet"; 
+  Controlnet.orientation = "column"; 
+  Controlnet.alignChildren = ["left","top"]; 
+  Controlnet.spacing = 10; 
+  Controlnet.margins = 8; 
+  Controlnet.alignment = ["fill","top"]; 
+
+// GROUP23
+// =======
+var group23 = Controlnet.add("group", undefined, {name: "group23"}); 
+  group23.orientation = "row"; 
+  group23.alignChildren = ["left","center"]; 
+  group23.spacing = 27; 
+  group23.margins = 0; 
+
+var checkbox1 = group23.add("checkbox", undefined, undefined, {name: "checkbox1"}); 
+  checkbox1.text = "Invert "; 
+
+var checkbox2 = group23.add("checkbox", undefined, undefined, {name: "checkbox2"}); 
+  checkbox2.text = "RGB2BGR"; 
+
+var checkbox3 = group23.add("checkbox", undefined, undefined, {name: "checkbox3"}); 
+  checkbox3.text = "Low VRAM"; 
+
+var checkbox4 = group23.add("checkbox", undefined, undefined, {name: "checkbox4"}); 
+  checkbox4.text = "Guess"; 
+
+// GROUP24
+// =======
+var group24 = Controlnet.add("group", undefined, {name: "group24"}); 
+  group24.orientation = "row"; 
+  group24.alignChildren = ["left","center"]; 
+  group24.spacing = 10; 
+  group24.margins = 0; 
+
+var PreProcessor_array = ["none","canny","depth","depth_leres","fake_scribble","hed","mlsd","normal_map","openpose","segmentation","binary","color"]; 
+var PreProcessor = group24.add("dropdownlist", undefined, undefined, {name: "PreProcessor", items: PreProcessor_array}); 
+  PreProcessor.selection = 0; 
+  PreProcessor.preferredSize.width = 125; 
+  
+PreProcessor.onChange = function() {
+    if (PreProcessor.selection) {
+        PmodelV = PreProcessor.selection.text;
+    }
+};
+
+var ControlnetModel_array = []; 
+var ControlnetModel = group24.add("dropdownlist", undefined, undefined, {name: "ControlnetModel", items: ControlnetModel_array}); 
+  ControlnetModel.selection = 0; 
+  ControlnetModel.preferredSize.width = 125; 
+  
+ControlnetModel.onChange = function() {
+    if (ControlnetModel.selection) {
+        CmodelV = ControlnetModel.selection.text;
+    }
+};
+
+var button2 = group24.add("button", undefined, undefined, {name: "button2"}); 
+  button2.text = "Refresh"; 
+  button2.preferredSize.width = 60; 
+  
+button2.onClick = function() {
+    handleButtonClick("controlnet/model_list");
+
+    var response = sendRequestWithoutData("controlnet/model_list");
+
+    if (response.error) {
+        alert("Error: " + response.error);
+    } else {
+        var payload = response;
+        ControlnetModel.removeAll();
+        ControlnetModel_array = payload.model_list;
+
+        for (var i = 0; i < ControlnetModel_array.length; i++) {
+            ControlnetModel.add("item", ControlnetModel_array[i]);
+        }
+        
+        // Set the first item as the default selected item
+        if (ControlnetModel.items.length > 0) {
+            ControlnetModel.selection = ControlnetModel.items[0];
+        }
+    }
+}
+
+
+// GROUP25
+// =======
+var group25 = Controlnet.add("group", undefined, {name: "group25"}); 
+  group25.preferredSize.width = 300; 
+  group25.orientation = "row"; 
+  group25.alignChildren = ["left","center"]; 
+  group25.spacing = 30; 
+  group25.margins = 5; 
+
+// GROUP26
+// =======
+var group26 = group25.add("group", undefined, {name: "group26"}); 
+  group26.orientation = "column"; 
+  group26.alignChildren = ["left","center"]; 
+  group26.spacing = 3; 
+  group26.margins = 3; 
+
+var WeightLabel = group26.add("statictext", undefined, undefined, {name: "WeightLabel"}); 
+  WeightLabel.text = "Weight"; 
+  
+var WeightSlider = group26.add("slider", undefined, undefined, undefined, undefined, {name: "WeightSlider"}); 
+  WeightSlider.minvalue = 0.00; 
+  WeightSlider.maxvalue = 2.00; 
+  WeightSlider.value = 1.00; 
+  WeightSlider.preferredSize.width = 80; 
+
+var Weight = group26.add("statictext", undefined, undefined, {name: "Weight"}); 
+  Weight.text = "1.00"; 
+
+function roundToNearest(value, nearest) {
+    return Math.round(value / nearest) * nearest;
+}
+
+WeightSlider.onChange = function () {
+    Weight.text = roundToNearest(WeightSlider.value, 0.05).toFixed(2);
+};
+
+
+// GROUP27
+// =======
+var group27 = group25.add("group", undefined, {name: "group27"}); 
+  group27.orientation = "column"; 
+  group27.alignChildren = ["left","center"]; 
+  group27.spacing = 0; 
+  group27.margins = 0; 
+
+var GuidanceStartLabel = group27.add("statictext", undefined, undefined, {name: "GuidanceStartLabel"}); 
+  GuidanceStartLabel.text = "Guidance Start:"; 
+
+var GuidanceStartSlider = group27.add("slider", undefined, undefined, undefined, undefined, {name: "GuidanceStartSlider"}); 
+  GuidanceStartSlider.minvalue = 0; 
+  GuidanceStartSlider.maxvalue = 1; 
+  GuidanceStartSlider.value = 0; 
+  GuidanceStartSlider.preferredSize.width = 80; 
+
+var GuidanceStart = group27.add("statictext", undefined, undefined, {name: "GuidanceStart"}); 
+  GuidanceStart.text = "0.00"; 
+
+GuidanceStartSlider.onChange = function () {
+    GuidanceStart.text = (GuidanceStartSlider.value).toFixed(2);
+};
+
+// GROUP28
+// =======
+var group28 = group25.add("group", undefined, {name: "group28"}); 
+  group28.orientation = "column"; 
+  group28.alignChildren = ["left","center"]; 
+  group28.spacing = 0; 
+  group28.margins = 0; 
+
+var GuidanceEndLabel = group28.add("statictext", undefined, undefined, {name: "GuidanceEndLabel"}); 
+  GuidanceEndLabel.text = "Guidance End:"; 
+
+var GuidanceEndSlider = group28.add("slider", undefined, undefined, undefined, undefined, {name: "GuidanceEndSlider"}); 
+  GuidanceEndSlider.minvalue = 0; 
+  GuidanceEndSlider.maxvalue = 1; 
+  GuidanceEndSlider.value = 1; 
+  GuidanceEndSlider.preferredSize.width = 80; 
+
+var GuidanceEnd = group28.add("statictext", undefined, undefined, {name: "GuidanceEnd"}); 
+  GuidanceEnd.text = "1.00"; 
+
+GuidanceEndSlider.onChange = function () {
+    GuidanceEnd.text = (GuidanceEndSlider.value).toFixed(2);
+};
+
+// GROUP29
+// =======
+var group29 = Controlnet.add("group", undefined, {name: "group29"}); 
+  group29.orientation = "column"; 
+  group29.alignChildren = ["left","center"]; 
+  group29.spacing = 0; 
+  group29.margins = 5; 
+
+var ProcessorRes = group29.add("statictext", undefined, undefined, {name: "ProcessorRes"}); 
+  ProcessorRes.text = "Processor_res"; 
+
+// GROUP30
+// =======
+var group30 = group29.add("group", undefined, {name: "group30"}); 
+  group30.orientation = "row"; 
+  group30.alignChildren = ["left","center"]; 
+  group30.spacing = 10; 
+  group30.margins = 0; 
+
+var ProcessorResSlider = group30.add("slider", undefined, undefined, undefined, undefined, {name: "ProcessorResSlider"}); 
+  ProcessorResSlider.minvalue = 64; 
+  ProcessorResSlider.maxvalue = 2048; 
+  ProcessorResSlider.value = 384; 
+  ProcessorResSlider.preferredSize.width = 265; 
+
+var ProcRes = group30.add('edittext {properties: {name: "ProcRes"}}'); 
+  ProcRes.text = "10.0"; 
+
+ProcessorResSlider.onChange = function () {
+    ProcRes.text = Math.round(ProcessorResSlider.value);
+};
+
+// GROUP29
+// =======
+var ThresholdA = group29.add("statictext", undefined, undefined, {name: "ThresholdA"}); 
+  ThresholdA.text = "Threshold A:"; 
+
+// GROUP31
+// =======
+var group31 = group29.add("group", undefined, {name: "group31"}); 
+  group31.orientation = "row"; 
+  group31.alignChildren = ["left","center"]; 
+  group31.spacing = 10; 
+  group31.margins = 0; 
+
+var ThresholdASlider = group31.add("slider", undefined, undefined, undefined, undefined, {name: "ThresholdASlider"}); 
+  ThresholdASlider.minvalue = 0; 
+  ThresholdASlider.maxvalue = 100; 
+  ThresholdASlider.value = 50; 
+  ThresholdASlider.preferredSize.width = 265; 
+
+var ThreshA = group31.add('edittext {properties: {name: "ThreshA"}}'); 
+  ThreshA.text = "0.50"; 
+
+// GROUP29
+// =======
+var ThresholdB = group29.add("statictext", undefined, undefined, {name: "ThresholdB"}); 
+  ThresholdB.text = "Threshold A:"; 
+
+// GROUP32
+// =======
+var group32 = group29.add("group", undefined, {name: "group32"}); 
+  group32.orientation = "row"; 
+  group32.alignChildren = ["left","center"]; 
+  group32.spacing = 10; 
+  group32.margins = 0; 
+
+var ThresholdBSlider = group32.add("slider", undefined, undefined, undefined, undefined, {name: "ThresholdBSlider"}); 
+  ThresholdBSlider.minvalue = 0; 
+  ThresholdBSlider.maxvalue = 100; 
+  ThresholdBSlider.value = 50; 
+  ThresholdBSlider.preferredSize.width = 265; 
+
+var ThreshB = group32.add('edittext {properties: {name: "ThreshB"}}'); 
+  ThreshB.text = "0.50"; 
+
+// GROUP33
+// =======
+var group33 = Controlnet.add("group", undefined, {name: "group33"}); 
+  group33.orientation = "row"; 
+  group33.alignChildren = ["left","center"]; 
+  group33.spacing = 10; 
+  group33.margins = 0; 
+
+var radiobutton1 = group33.add("radiobutton", undefined, undefined, {name: "radiobutton1"}); 
+  radiobutton1.text = "Just Resize"; 
+
+var radiobutton2 = group33.add("radiobutton", undefined, undefined, {name: "radiobutton2"}); 
+  radiobutton2.text = "Scale to Fit (Inner Fit)"; 
+
+var radiobutton3 = group33.add("radiobutton", undefined, undefined, {name: "radiobutton3"}); 
+  radiobutton3.text = "Envelope(Outer Fit)"; 
+
+// GROUP34
+// =======
+var group34 = Controlnet.add("group", undefined, {name: "group34"}); 
+  group34.orientation = "column"; 
+  group34.alignChildren = ["left","center"]; 
+  group34.spacing = 0; 
+  group34.margins = 5; 
+
+var CanvasWidth = group34.add("statictext", undefined, undefined, {name: "CanvasWidth"}); 
+  CanvasWidth.text = "Canvas Width:"; 
+
+// GROUP35
+// =======
+var group35 = group34.add("group", undefined, {name: "group35"}); 
+  group35.orientation = "row"; 
+  group35.alignChildren = ["left","center"]; 
+  group35.spacing = 10; 
+  group35.margins = 0; 
+
+var CanvasWslider = group35.add("slider", undefined, undefined, undefined, undefined, {name: "CanvasWslider"}); 
+  CanvasWslider.minvalue = 0; 
+  CanvasWslider.maxvalue = 100; 
+  CanvasWslider.value = 50; 
+  CanvasWslider.preferredSize.width = 275; 
+
+var Canvasw = group35.add('edittext {properties: {name: "Canvasw"}}'); 
+  Canvasw.text = "10.0"; 
+
+// GROUP34
+// =======
+var CanvasHeight = group34.add("statictext", undefined, undefined, {name: "CanvasHeight"}); 
+  CanvasHeight.text = "Canvas Height:"; 
+
+// GROUP36
+// =======
+var group36 = group34.add("group", undefined, {name: "group36"}); 
+  group36.orientation = "row"; 
+  group36.alignChildren = ["left","center"]; 
+  group36.spacing = 10; 
+  group36.margins = 0; 
+
+var CanvasHslider = group36.add("slider", undefined, undefined, undefined, undefined, {name: "CanvasHslider"}); 
+  CanvasHslider.minvalue = 0; 
+  CanvasHslider.maxvalue = 100; 
+  CanvasHslider.value = 50; 
+  CanvasHslider.preferredSize.width = 275; 
+
+var canvash = group36.add('edittext {properties: {name: "canvash"}}'); 
+  canvash.text = "0.50"; 
+  
 // TAB4
 // ====
 var tab4 = tpanel1.add("tab", undefined, undefined, {name: "tab4"}); 
