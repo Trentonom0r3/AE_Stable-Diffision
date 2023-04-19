@@ -1,9 +1,13 @@
 # AE_Stable-Diffision
-NOTE. I believe many of the errors with generation are occuring due to when AE is started vs the webUI. Start the webUI first, then AE. If that doesn't work, and the project you're trying to use it on won't let you do it, try restarting again, and use a clean project.
+IMGG2IMG CONTROLNET SUPPORT ADDED!
 
 Server and UI are updated to use socket objects instead of system calls. Greatly lightens the load on system, and keeps AE responsive. Just go to the 'Options' Tab, and click 'start server.' Leave that up and youre good to go. Webuser-ui will still need to be running. 
 
+![Screenshot 2023-04-19 010839](https://user-images.githubusercontent.com/130304830/232982076-62875cdd-1dbe-4060-ac98-a0bf19f964a9.png)
+![Screenshot 2023-04-19 010851](https://user-images.githubusercontent.com/130304830/232982092-155eeefe-52f2-4b52-bca4-981f88142a1d.png)
+
 Borrowed server-side code from [@AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin](https://github.com/AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin)
+
 
 
 The beginnings of a full after effects plugin that integrates Auto1111 Stable diffusion. Useable as a scriptUI for now.
@@ -19,13 +23,14 @@ Make sure you are running your webuser-ui.bat file and the local server is up.
 Also, make sure you have --api enabled.
 
 NOTE! Please install the output and render modules into your AE copy before running the script. These will allow the 'Get Mask' Function to work properly.
-[Screenshot 2023-04-14 105311](https://user-images.githubusercontent.com/130304830/232093618-e4893c09-06cf-485b-8cb1-d144101a38a4.png)
 
 Functionality-
 This creates a scriptUI panel for Adobe After Effects that provides basic parameters for Auto1111 stable diffusion image generation.
 Currently, the 'method' and 'process' dropdowns are unusable, but do not affect functionality. 
 You will recognize the parameters used in the UI, so I won't go into detail on those.
 
+![Screenshot 2023-04-14 105311](https://user-images.githubusercontent.com/130304830/232982116-56ac3ca6-ab19-48d2-9633-732a87e7b0e4.png)
+![Screenshot 2023-04-19 010820](https://user-images.githubusercontent.com/130304830/232982140-a1d761ba-7efe-4268-b483-f0c8b2f1557c.png)
 
 At the bottom of the UI, there are several buttons, most of which are self explanatory. 
 Txt2Img generates txt2img, img2img generates img2img.
