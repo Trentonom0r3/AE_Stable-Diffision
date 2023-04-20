@@ -64,21 +64,11 @@ function sendRequestWithPayload(request_type, payload) {
 function handleButtonClick(request_type) {
     var response = sendRequestWithoutData(request_type);
 
-    if (response.error) {
-        alert("Error: " + response.error);
-    } else {
-        alert("Response: " + JSON.stringify(response));
-    }
 }
 
 function handleButton(request_type, payload) {
     var response = sendRequestWithPayload(request_type, payload);
 
-    if (response.error) {
-        alert("Error: " + response.error);
-    } else {
-        alert("Response: " + JSON.stringify(response));
-    }
 }
 
 
@@ -502,7 +492,7 @@ var samplingSizeSlider = group13.add("slider", undefined, undefined, undefined, 
   samplingSizeSlider.value = 20; 
   samplingSizeSlider.preferredSize.width = 80; 
 
-var samplingSize = group13.add("statictext", undefined, undefined, {name: "samplingSize"}); 
+var samplingSize = group13.add("edittext", undefined, undefined, {name: "samplingSize"}); 
   samplingSize.text = "20"; 
 
 samplingSizeSlider.onChange = function () {
@@ -526,7 +516,7 @@ var batchSizeSlider = group14.add("slider", undefined, undefined, undefined, und
   batchSizeSlider.value = 1; 
   batchSizeSlider.preferredSize.width = 80; 
 
-var batchSize = group14.add("statictext", undefined, undefined, {name: "batchSize"}); 
+var batchSize = group14.add("edittext", undefined, undefined, {name: "batchSize"}); 
   batchSize.text = "1"; 
 
 batchSizeSlider.onChange = function () {
@@ -550,7 +540,7 @@ var batchCountSlider = group15.add("slider", undefined, undefined, undefined, un
   batchCountSlider.value = 1; 
   batchCountSlider.preferredSize.width = 80; 
 
-var batchCount = group15.add("statictext", undefined, undefined, {name: "batchCount"}); 
+var batchCount = group15.add("edittext", undefined, undefined, {name: "batchCount"}); 
   batchCount.text = "1"; 
 
 batchCountSlider.onChange = function () {
@@ -605,7 +595,7 @@ var cfgScaleSlider = group18.add("slider", undefined, undefined, undefined, unde
   cfgScaleSlider.value = 10;   
   cfgScaleSlider.preferredSize.width = 275; 
 
-var cfgScale = group18.add('statictext {properties: {name: "cfgScale"}}'); 
+var cfgScale = group18.add('edittext {properties: {name: "cfgScale"}}'); 
   cfgScale.text = "10.0"; 
 
 cfgScaleSlider.onChange = function () {
@@ -628,7 +618,7 @@ var group19 = group17.add("group", undefined, {name: "group19"});
 var denoisingStrengthSlider = group19.add("slider", undefined, 0.50, 0.00, 1.00);  
   denoisingStrengthSlider.preferredSize.width = 275; 
 
-var denoisingStrength = group19.add("statictext", undefined, "0.50");
+var denoisingStrength = group19.add("edittext", undefined, "0.50");
 
 denoisingStrengthSlider.onChange = function () {
 denoisingStrength.text = (denoisingStrengthSlider.value * 1).toFixed(2);
@@ -721,7 +711,7 @@ sendToImg2ImgButton.onClick = function () {
 	var vvRam = checkbox3.value ? true : false;
 	var PmodelV = PreProcessor.selection ? PreProcessor.selection.text : "";
 	var CmodelV = ControlnetModel.selection ? ControlnetModel.selection.text : "";
-	var CNimage = ControlnetInput.text;
+
 	
 	 // Mode 1,2,3,4,5 --- 0= img2img 1=img2img sketch 2=Inpaint 3=Inpaint sketch 4= inpaint upload mask 5=batch
  //only need 0,4,5 currently. 
@@ -768,7 +758,6 @@ if (enableControlnetCheckbox.value == false) {
         guidance_start: 1,
         guidance_end: 1,
         guess_mode: 1,
-		image_path: CNimage,
     };
 }
 
@@ -935,6 +924,15 @@ var tab3 = tpanel1.add("tab", undefined, undefined, {name: "tab3"});
   tab3.spacing = 10; 
   tab3.margins = 12; 
 
+// TAB3
+// ====
+var tab3 = tpanel1.add("tab", undefined, undefined, {name: "tab3"}); 
+  tab3.text = "Extras"; 
+  tab3.orientation = "column"; 
+  tab3.alignChildren = ["center","top"]; 
+  tab3.spacing = 10; 
+  tab3.margins = 12; 
+
 // CONTROLNET
 // ==========
 var Controlnet = tab3.add("panel", undefined, undefined, {name: "Controlnet"}); 
@@ -944,30 +942,6 @@ var Controlnet = tab3.add("panel", undefined, undefined, {name: "Controlnet"});
   Controlnet.spacing = 10; 
   Controlnet.margins = 8; 
   Controlnet.alignment = ["fill","top"]; 
-
-// CONTROLIMAGE
-// ============
-var ControlImage = Controlnet.add("group", undefined, {name: "ControlImage"}); 
-ControlImage.orientation = "row"; 
-ControlImage.alignChildren = ["left","center"]; 
-ControlImage.spacing = 10; 
-ControlImage.margins = 0; 
-
-var ControlnetInput = ControlImage.add('edittext {properties: {name: "ControlnetInput"}}'); 
-ControlnetInput.preferredSize.width = 247; 
-
-var button3 = ControlImage.add("button", undefined, undefined, {name: "button2"}); 
-button3.text = "CN_Input"; 
-
-// Add onClick event to button3
-button3.onClick = function() {
-    var imageFile = File.openDialog('Select an image file', 'Images: *.png;*.jpg;*.jpeg;*.bmp;*.gif');
-    if (imageFile !== null) {
-        ControlnetInput.text = imageFile.fsName;
-    }
-};
-
-// ... (rest of the code)
 
 // GROUP23
 // =======
@@ -997,7 +971,7 @@ var group24 = Controlnet.add("group", undefined, {name: "group24"});
   group24.spacing = 10; 
   group24.margins = 0; 
 
-var PreProcessor_array = ["none","canny","depth","depth_leres","fake_scribble","hed","mlsd","normal_map","openpose","segmentation","binary","color"]; 
+var PreProcessor_array = []; 
 var PreProcessor = group24.add("dropdownlist", undefined, undefined, {name: "PreProcessor", items: PreProcessor_array}); 
   PreProcessor.selection = 0; 
   PreProcessor.preferredSize.width = 125; 
@@ -1029,7 +1003,7 @@ button2.onClick = function() {
     var response = sendRequestWithoutData("controlnet/model_list");
 
     if (response.error) {
-        alert("Error: " + response.error);
+        
     } else {
         var payload = response;
         ControlnetModel.removeAll();
@@ -1043,9 +1017,30 @@ button2.onClick = function() {
         if (ControlnetModel.items.length > 0) {
             ControlnetModel.selection = ControlnetModel.items[0];
         }
-    }
+    
 }
 
+    handleButtonClick("controlnet/module_list");
+
+    var response = sendRequestWithoutData("controlnet/module_list");
+
+    if (response.error) {
+        
+    } else {
+        var payload = response;
+        PreProcessor.removeAll();
+        PreProcessor_array = payload.module_list;
+
+        for (var i = 0; i < PreProcessor_array.length; i++) {
+            PreProcessor.add("item", PreProcessor_array[i]);
+        }
+        
+        // Set the first item as the default selected item
+        if (PreProcessor.items.length > 0) {
+            PreProcessor.selection = PreProcessor.items[0];
+        }
+    }
+}
 
 // GROUP25
 // =======
@@ -1071,7 +1066,7 @@ var WeightSlider = group26.add("slider", undefined, undefined, undefined, undefi
   WeightSlider.minvalue = 0.00; 
   WeightSlider.maxvalue = 2.00; 
   WeightSlider.value = 1.00; 
-  WeightSlider.preferredSize.width = 75; 
+  WeightSlider.preferredSize.width = 80; 
 
 var Weight = group26.add("statictext", undefined, undefined, {name: "Weight"}); 
   Weight.text = "1.00"; 
@@ -1100,7 +1095,7 @@ var GuidanceStartSlider = group27.add("slider", undefined, undefined, undefined,
   GuidanceStartSlider.minvalue = 0; 
   GuidanceStartSlider.maxvalue = 1; 
   GuidanceStartSlider.value = 0; 
-  GuidanceStartSlider.preferredSize.width = 75; 
+  GuidanceStartSlider.preferredSize.width = 80; 
 
 var GuidanceStart = group27.add("statictext", undefined, undefined, {name: "GuidanceStart"}); 
   GuidanceStart.text = "0.00"; 
@@ -1124,7 +1119,7 @@ var GuidanceEndSlider = group28.add("slider", undefined, undefined, undefined, u
   GuidanceEndSlider.minvalue = 0; 
   GuidanceEndSlider.maxvalue = 1; 
   GuidanceEndSlider.value = 1; 
-  GuidanceEndSlider.preferredSize.width = 75; 
+  GuidanceEndSlider.preferredSize.width = 80; 
 
 var GuidanceEnd = group28.add("statictext", undefined, undefined, {name: "GuidanceEnd"}); 
   GuidanceEnd.text = "1.00"; 
@@ -1138,7 +1133,7 @@ GuidanceEndSlider.onChange = function () {
 var group29 = Controlnet.add("group", undefined, {name: "group29"}); 
   group29.orientation = "column"; 
   group29.alignChildren = ["left","center"]; 
-  group29.spacing = 4; 
+  group29.spacing = 0; 
   group29.margins = 5; 
 
 var ProcessorRes = group29.add("statictext", undefined, undefined, {name: "ProcessorRes"}); 
@@ -1150,7 +1145,7 @@ var group30 = group29.add("group", undefined, {name: "group30"});
   group30.orientation = "row"; 
   group30.alignChildren = ["left","center"]; 
   group30.spacing = 10; 
-  group30.margins = 4; 
+  group30.margins = 0; 
 
 var ProcessorResSlider = group30.add("slider", undefined, undefined, undefined, undefined, {name: "ProcessorResSlider"}); 
   ProcessorResSlider.minvalue = 64; 
@@ -1160,7 +1155,7 @@ var ProcessorResSlider = group30.add("slider", undefined, undefined, undefined, 
 
 var ProcRes = group30.add('edittext {properties: {name: "ProcRes"}}'); 
   ProcRes.text = "10.0"; 
-ProcRes.preferredSize.width = 45;
+
 ProcessorResSlider.onChange = function () {
     ProcRes.text = Math.round(ProcessorResSlider.value);
 };
@@ -1176,7 +1171,7 @@ var group31 = group29.add("group", undefined, {name: "group31"});
   group31.orientation = "row"; 
   group31.alignChildren = ["left","center"]; 
   group31.spacing = 10; 
-  group31.margins = 4; 
+  group31.margins = 0; 
 
 var ThresholdASlider = group31.add("slider", undefined, undefined, undefined, undefined, {name: "ThresholdASlider"}); 
   ThresholdASlider.minvalue = 0; 
@@ -1186,7 +1181,7 @@ var ThresholdASlider = group31.add("slider", undefined, undefined, undefined, un
 
 var ThreshA = group31.add('edittext {properties: {name: "ThreshA"}}'); 
   ThreshA.text = "0.50"; 
-ThreshA.preferredSize.width = 45;
+
 // GROUP29
 // =======
 var ThresholdB = group29.add("statictext", undefined, undefined, {name: "ThresholdB"}); 
@@ -1198,7 +1193,7 @@ var group32 = group29.add("group", undefined, {name: "group32"});
   group32.orientation = "row"; 
   group32.alignChildren = ["left","center"]; 
   group32.spacing = 10; 
-  group32.margins = 4; 
+  group32.margins = 0; 
 
 var ThresholdBSlider = group32.add("slider", undefined, undefined, undefined, undefined, {name: "ThresholdBSlider"}); 
   ThresholdBSlider.minvalue = 0; 
@@ -1208,14 +1203,14 @@ var ThresholdBSlider = group32.add("slider", undefined, undefined, undefined, un
 
 var ThreshB = group32.add('edittext {properties: {name: "ThreshB"}}'); 
   ThreshB.text = "0.50"; 
-ThreshB.preferredSize.width = 45;
+
 // GROUP33
 // =======
 var group33 = Controlnet.add("group", undefined, {name: "group33"}); 
   group33.orientation = "row"; 
   group33.alignChildren = ["left","center"]; 
   group33.spacing = 10; 
-  group33.margins = 4; 
+  group33.margins = 0; 
 
 var radiobutton1 = group33.add("radiobutton", undefined, undefined, {name: "radiobutton1"}); 
   radiobutton1.text = "Just Resize"; 
