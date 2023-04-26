@@ -1,4 +1,7 @@
 # AE_Stable-Diffision
+
+Further development is paused. I've realized that to reach the full ability of this, I need to make it a CEP extension. That development has begun. The final product will be much more integrated, include collab support, more fine-tuned and specific SD features, presets/automated consistency features. It will also allow us to send specific frames, or the entire workspace to SD. Not to mention, and most inmportantly, automatic reintegration of the generated images!
+
 IMGG2IMG CONTROLNET SUPPORT ADDED!
 
 Server and UI are updated to use socket objects instead of system calls. Greatly lightens the load on system, and keeps AE responsive. Just go to the 'Options' Tab, and click 'start server.' Leave that up and youre good to go. Webuser-ui will still need to be running. 
