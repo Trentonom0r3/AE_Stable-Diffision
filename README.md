@@ -1,6 +1,6 @@
 # AE_Stable-Diffision
 
-Further development is paused. I've realized that to reach the full ability of this, I need to make it a CEP extension. That development has begun. The final product will be much more integrated, include collab support, more fine-tuned and specific SD features, presets/automated consistency features. It will also allow us to send specific frames, or the entire workspace to SD. Not to mention, and most inmportantly, automatic reintegration of the generated images!
+Further development is paused. I've realized that to reach the full ability of this, I need to make it a CEP extension. That development has begun. The final product will be much more integrated, include collab support, more fine-tuned and specific SD features, presets/automated consistency features. It will also allow us to send specific frames, or the entire workspace to SD. Not to mention, and most importantly, automatic reintegration of the generated images!
 
 IMGG2IMG CONTROLNET SUPPORT ADDED!
 
